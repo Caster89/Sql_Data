@@ -4,34 +4,43 @@
 #include <QSqlDatabase>
 #include <QVector>
 #include <QSqlTableModel>
+#include <QSqlIndex>
 #include <QSqlRecord>
 #include <QSqlQuery>
 #include <querygenerator.h>
 #include "myfield.h"
 
-class MySqlTableModel : public QAbstractTableModel
+class QSqlTableModelPrivate;
+
+class MySqlTableModel : public QSqlTableModel
 {
     Q_OBJECT
 
 public:
     MySqlTableModel(QWidget *parent, QSqlDatabase newDB);
 
-    int rowCount (const QModelIndex &parent) const;
-    int columnCount(const QModelIndex &parent) const;
+    bool select();
+
+    //int rowCount (const QModelIndex &parent) const;
+    //int columnCount(const QModelIndex &parent) const;
     QVariant data(const QModelIndex &index, int role) const;
     QVariant headerData(int section, Qt::Orientation orientation, int role= Qt::DisplayRole) const;
-
+    void revertRow(int row);
+    bool removeRows(int row,int count, const QModelIndex &parent);
+    void setTable(const QString &tableName);
+    int insertIndex;
+    int editIndex;
     //bool setHeaderData(int section, Qt::Orientation orientation, const QVariant &value, int role=Qt::EditRole);
     //QVector Values;
     QVector<QSqlRecord > Values;
 
     bool insertRow(int row, const QModelIndex &parent);
+    bool insertRows(int row, int count, const QModelIndex &parent);
     bool setData(const QModelIndex &index, const QVariant &value, int role);
 
 
 
-    void select();
-    QSqlRecord record(int Rec_index);
+    //QSqlRecord record(int Rec_index);
     QVector<MyField> getFields();
     MyField getField(int section);
     inline int indexOf(QString FieldName){
@@ -52,6 +61,7 @@ private:
     //This baseRecord is created each time the columns are changed in order to
     //have a default structure, which can be used to create new records
     QSqlRecord baseRecord;
+    QSqlIndex primaryRecord;
 
     //QVector of MyFields which is created each time the columns have to be re-read
     QVector<MyField> Fields;
@@ -76,7 +86,8 @@ private:
 
 
     bool canUpdate(QSqlRecord *avlbRecord);
-    QSqlRecord GetPrimary(QSqlRecord* curr_Record);
+    QSqlRecord getPrimary(QSqlRecord* curr_Record) const;
+    QSqlRecord getPrimary(const QModelIndex &index) const;
     bool CreateDirectory(QSqlRecord newRec);
     QString GetDirectory(QSqlRecord newRec);
     bool insertImages(QString TableName,QSqlRecord Primary_Values,QVector<QSqlRecord> Images);

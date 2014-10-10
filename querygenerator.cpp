@@ -21,7 +21,7 @@ QString QueryGenerator::SelectStat(QString Table_name, QVector<QString> Columns)
         ReturnString.chop(1);
     }
 
-    ReturnString.append(QString(" FROM %1").arg(Table_name));
+    ReturnString.append(QString(" FROM \"%1\"").arg(Table_name));
     return ReturnString;
 }
 

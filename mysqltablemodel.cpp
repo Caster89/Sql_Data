@@ -4,7 +4,9 @@
 #include <QSqlQuery>
 #include <QVector>
 #include <QSqlTableModel>
+#include <QSqlIndex>
 #include <QAbstractItemModel>
+#include <QModelIndex>
 #include <QSqlRecord>
 #include <QtDebug>
 #include <QSqlField>
@@ -20,20 +22,39 @@
 /// the newDB is the QSqlDatabase linkd to this table model. It is saved in the
 /// Database variable
 MySqlTableModel::MySqlTableModel(QWidget *parent, QSqlDatabase newDB)
-    :QAbstractTableModel(parent)
+    :QSqlTableModel(parent,newDB)
 {
-    Database = newDB;
+    //Database = newDB;
+}
+
+void MySqlTableModel::setTable(const QString &tableName){
+    editIndex=-1;
+    insertIndex=-1;
+    QSqlTableModel::setTable(tableName);
+    primaryRecord=database().primaryIndex(tableName);
+    baseRecord=database().record(tableName);
 }
 
 /////////////////////////////////////////////////////////////////////
 /// \brief MySqlTableModel::select
 ///This method is called when initiating a Database. It determines the number of
 ///columns, rows, Primary keys, etc
-void MySqlTableModel::select()
+bool MySqlTableModel::select()
 {
+    /*The first step is to set the table to Main_table, which is the table containing
+     * the data in sql database
+     */
+    QStringList avlbTables = database().tables();
+    if(avlbTables.contains("Main_table")){
+        setTable("Main_table");
+    }
+    bool isOK = QSqlTableModel::select();
+
+
+
     QSqlQuery query;
-    /*First step is creating a query in the 'Fields_table', selecting all entries,
-    and ordering them by the 'Poition' column. num_cols is set to 0
+    /*Next a query is created in the 'Fields_table', selecting all entries,
+    and ordering them by the 'Position' column. num_cols is set to 0
     */
     query.exec("SELECT * FROM Fields_table ORDER BY Position");
     num_cols=0;
@@ -44,23 +65,26 @@ void MySqlTableModel::select()
     while (query.next()){
         num_cols++;
         MyField temp_vec = MyField(query.value(0).toString(),query.value(1).toString(),query.value(2).toString(),query.value(3).toBool(),query.value(4).toBool(),query.value(5).toInt(),query.value(6).toBool());
-        baseRecord.append(QSqlField(query.value(0).toString()));
+        Fields.append(temp_vec);
+        //baseRecord.append(QSqlField(query.value(0).toString()));
         /*The field is checked to see if it is a primary one, in which case it is added
          *to the Primary Fields vector
          */
-        if(query.value(6).toInt()==1){
-            Primary_keys.append(temp_vec);
-        }
-        this->setHeaderData(num_cols-1,Qt::Horizontal,temp_vec.getName());
-        Fields.append(temp_vec);
+        //if(query.value(6).toInt()==1){
+            //Primary_keys.append(temp_vec);
+        //}
+        //this->setHeaderData(num_cols-1,Qt::Horizontal,temp_vec.getName());
+
 
     }
+    qDebug()<<"Fields array created";
     /*Once the columns are determined the rows are read. Each record is stored in
      *a temporary QSqlRecord. Next, if the row is not stored in the Main_table, and
      *is thus stored in another table, the other table is queried, the results stored
      *in a QVector<QSqlRecord> and placed i the temporary QSqlRecord. Finally once
      *all fields are completed the record is appended to the main QVector
      */
+    /*
     num_rows =0;
     query.exec("SELECT * FROM Main_table");
     while (query.next()){
@@ -74,12 +98,12 @@ void MySqlTableModel::select()
             if(Fields[i].getTable()!="Main_table"){
                 selectStatement=QueryGen.SelectStat(Fields[i].getTable());
                 whereStatement=QueryGen.WhereStat(GetPrimary(&curr_Record));
-                /*for(int n=0;n<Primary_keys.size();n++){
+                for(int n=0;n<Primary_keys.size();n++){
                     QVector<QString> temp_where;
                     temp_where<<Primary_keys[n].getName()<<curr_Record.value(baseRecord.indexOf(Primary_keys[n].getName())).toString();
                     //temp_where<<Primary_keys[i].getName()<<(query.record().value(baseRecord.indexOf(Fields[index.column()].getName()))).toString();
                     Where_Cond.append(temp_where);
-                }*/
+                }
                 whereStatement=selectStatement + " " + whereStatement;
                 QSqlQuery where_query;
                 where_query.exec(whereStatement);
@@ -100,10 +124,11 @@ void MySqlTableModel::select()
         Values.append(curr_Record);
 
         num_rows++;
-    }
+    }*/
+    return isOK;
 }
 
-int MySqlTableModel::rowCount(const QModelIndex &parent) const
+/*int MySqlTableModel::rowCount(const QModelIndex &parent) const
 {
     return num_rows;
 }
@@ -111,14 +136,37 @@ int MySqlTableModel::rowCount(const QModelIndex &parent) const
 int MySqlTableModel::columnCount(const QModelIndex &parent) const
 {
     return num_cols;
-}
+}*/
 
 QVariant MySqlTableModel::data(const QModelIndex &index, int role) const
 {
-    if (!index.isValid())
+
+
+    QVariant originalValue=QSqlTableModel::data(index,role);
+    qDebug()<<"The original value of "<<baseRecord.fieldName(index.column())<<"is:\n"<<originalValue;
+
+    if(Fields[index.column()].getTable()!="Main_table"){
+
+        QSqlRecord primValues;
+        primValues=getPrimary(index);
+        QString stmt=QueryGenerator::SelectStat(Fields[index.column()].getTable());
+        QString where=QueryGenerator::WhereStat(primValues);
+        stmt.append(QLatin1String(" "));
+        stmt.append(where);
+        qDebug()<<stmt;
+        QSqlQuery foreignTableQuery;
+        foreignTableQuery.exec(stmt);
+        qDebug()<<foreignTableQuery.size();
+        while(foreignTableQuery.next()){
+            qDebug()<<"Entered cycle";
+            qDebug()<<foreignTableQuery.record();
+        }
+    }
+    if (!index.isValid()||(role!=Qt::DisplayRole && role!= Qt::EditRole))
              return QVariant();
 
-    if (index.row() >= num_rows || index.row() < 0)
+    return QSqlTableModel::data(index,role);
+    /*if (index.row() >= num_rows || index.row() < 0)
              return QVariant();
 
     if (role == Qt::DisplayRole||role == Qt::EditRole){
@@ -159,7 +207,7 @@ QVariant MySqlTableModel::data(const QModelIndex &index, int role) const
 //             return record[index.column()];
     }
 
-    return QVariant();
+    return QVariant();*/
 
 }
 
@@ -210,6 +258,16 @@ void MySqlTableModel::revert(){
 }
 
 bool MySqlTableModel::setData(const QModelIndex &index, const QVariant &value, int role){
+    if(QSqlTableModel::setData(index,value,role)){
+        switch (editStrategy()) {
+        case OnRowChange:
+            editIndex=index.row();
+            break;
+        }
+        return true;
+    }
+    return false;
+
     if(bufferType=="INSERT" && index.row()==bufferPosition){
         qDebug()<<"Setting Data: "<<index.column();
         qDebug()<<"to: "<<value.toString();
@@ -234,9 +292,9 @@ MyField MySqlTableModel::getField(int section){
     return Fields[section];
 }
 
-QSqlRecord MySqlTableModel::record(int Rec_index){
+/*QSqlRecord MySqlTableModel::record(int Rec_index){
     return Values[Rec_index];
-}
+}*/
 
 QVariant MySqlTableModel::headerData(int section, Qt::Orientation orientation, int role) const{
 
@@ -247,7 +305,7 @@ QVariant MySqlTableModel::headerData(int section, Qt::Orientation orientation, i
 }
 
 bool MySqlTableModel::canUpdate(QSqlRecord *avlbRecord){
-    QSqlRecord CkcRecord= GetPrimary(avlbRecord);
+    QSqlRecord CkcRecord= getPrimary(avlbRecord);
     QString selQuery=QueryGen.SelectStat("Main_table");
     QString whereQuery=QueryGen.WhereStat(CkcRecord);
     QString compQuery= selQuery + " " + whereQuery;
@@ -264,16 +322,64 @@ bool MySqlTableModel::submit(){
 
 }
 
+bool MySqlTableModel::insertRows(int row, int count, const QModelIndex &parent){
+    if (row < 0 || count <= 0 || row > rowCount() || parent.isValid())
+            return false;
+    switch(editStrategy()){
+    case OnRowChange:
+        if(count!=1)
+            break;
+        insertIndex=row;
+        break;
+    }
+    return QSqlTableModel::insertRows(row,count,parent);
+}
+
+void MySqlTableModel::revertRow(int row){
+    if (row<0)
+        return;
+    if (editStrategy()==OnRowChange){
+        if(editIndex==row){
+            editIndex=-1;
+        }else if(insertIndex==row){
+            insertIndex=-1;
+        }
+    }
+    QSqlTableModel::revertRow(row);
+}
+
+bool MySqlTableModel::removeRows(int row,int count, const QModelIndex &parent){
+    if(QSqlTableModel::removeRows(row,count,parent)){
+        for(int i=0;i<count;++i){
+            if(row+1==insertIndex)
+                insertIndex=-1;
+        }
+        return true;
+    }
+    return false;
+}
+
 bool MySqlTableModel::submitAll(){
+
+
+    if(QSqlTableModel::submitAll()){
+        switch(editStrategy()){
+        case OnRowChange:
+            editIndex=-1;
+            insertIndex=-1;
+        }
+        return true;
+    }
+    return false;
+
     /*First step is to check if the record can be inserted, thus if the record is
      *new or if the primary fields have changedthe primary fields are compared,
      *if they are already present in the database the method returns false and ends
      **/
     QSqlQuery query;
-    QSqlRecord bufferPrimary=GetPrimary(&bufferRecord);
-    qDebug()<<bufferType;
-    qDebug()<<bufferPrimary;
-    if(bufferType=="INSERT"||bufferPrimary!=GetPrimary(&Values[bufferPosition])){
+    QSqlRecord bufferPrimary=getPrimary(&bufferRecord);
+
+    if(bufferType=="INSERT"||bufferPrimary!=getPrimary(&Values[bufferPosition])){
         if(!canUpdate(&bufferRecord)){
             qDebug()<<"Cannot Update";
             return false;
@@ -282,7 +388,7 @@ bool MySqlTableModel::submitAll(){
     if (bufferType=="INSERT"){
         CreateDirectory(bufferPrimary);
         QString insert_stat=QueryGen.InsertStat("Main_table",bufferPrimary);
-        qDebug()<<insert_stat;
+
         //query.exec(insert_stat);
     }
     for (int i=0;i<Fields.size();i++){
@@ -294,7 +400,7 @@ bool MySqlTableModel::submitAll(){
         }else if(Fields[i].getType()=="IMAGE"){
             if(bufferRecord.value(fieldName).toString()!=Values[bufferPosition].value(fieldName).toString()){
                 if (bufferRecord.value(fieldName).toString().isEmpty()){
-                    QString imgDir=GetDirectory()
+                    //QString imgDir=GetDirectory();
                 }
 
 
@@ -308,14 +414,28 @@ bool MySqlTableModel::submitAll(){
     */
 }
 
-QSqlRecord MySqlTableModel::GetPrimary(QSqlRecord *curr_Record){
-    QSqlRecord ret_Record = QSqlRecord();
+QSqlRecord MySqlTableModel::getPrimary(const QModelIndex &index) const{
+    QSqlRecord record=primaryRecord;
+    for(int i=0;i<record.count();++i){
+        QModelIndex nIndex = QSqlTableModel::index(index.row(),baseRecord.indexOf(record.fieldName(i)));
+        record.setValue(i,data(nIndex,Qt::EditRole));
+    }
+    return record;
+}
+
+QSqlRecord MySqlTableModel::getPrimary(QSqlRecord *curr_Record) const{
+    QSqlRecord record=primaryRecord;
+    for(int i=0;i<record.count();++i)
+
+        record.setValue(i,curr_Record->value(curr_Record->indexOf(record.fieldName(i))));
+    return record;
+    /*QSqlRecord ret_Record = QSqlRecord();
     for(int i=0;i<Primary_keys.size();i++){
         QString FieldName=Primary_keys[i].getName();
         ret_Record.append(curr_Record->field(FieldName));
         ret_Record.setValue(FieldName,curr_Record->value(FieldName));
     }
-    return ret_Record;
+    return ret_Record;*/
 }
 
 bool MySqlTableModel::CreateDirectory(QSqlRecord newRec){

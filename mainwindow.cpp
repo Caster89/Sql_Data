@@ -142,8 +142,8 @@ bool MainWindow::CreateConnection(QString dbDir){
     qDebug()<<"Connection initiated";
     db=QSqlDatabase::addDatabase("QSQLITE");
 
-    db.setDatabaseName(QString("%1/%1").arg(dbDir));
-
+    //db.setDatabaseName(QString("%1/%1").arg(dbDir));
+    db.setDatabaseName("/movies/movies");
 
     if (!db.open()){
         qDebug()<<"No Connection made to file";
