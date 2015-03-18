@@ -23,7 +23,15 @@ SOURCES += main.cpp\
     myfield.cpp \
     mysqltablemodel.cpp \
     previewpopup.cpp \
-    querygenerator.cpp
+    querygenerator.cpp \
+    medialistwidget.cpp \
+    printitembase.cpp \
+    printitemtext.cpp \
+    printitemlongtext.cpp \
+    printitemimage.cpp \
+    printitem.cpp \
+    printsetup.cpp \
+    mystackedwidget.cpp
 
 HEADERS  += mainwindow.h \
     modifydialog.h \
@@ -34,6 +42,18 @@ HEADERS  += mainwindow.h \
     myfield.h \
     mysqltablemodel.h \
     previewpopup.h \
-    querygenerator.h
+    querygenerator.h \
+    datatype.h \
+    medialistwidget.h \
+    printitembase.h \
+    printitemtext.h \
+    printitemlongtext.h \
+    printitemimage.h \
+    printitem.h \
+    printsetup.h \
+    mystackedwidget.h
 
 FORMS    += mainwindow.ui
+
+RESOURCES += \
+    images.qrc

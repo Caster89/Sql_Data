@@ -9,6 +9,7 @@
 #include <QHBoxLayout>
 #include <QPixmap>
 #include <QListWidgetItem>
+#include "medialistwidget.h"
 #include <QFileDialog>
 #include <imageitemdelegate.h>
 #include <QMetaType>
@@ -16,9 +17,11 @@
 #include <QSpacerItem>
 #include <QSqlField>
 #include <QSqlRecord>
+#include <mysqltablemodel.h>
+#include <datatype.h>
 
 
-DisplayWidget::DisplayWidget(QString newFieldName, QString FieldType, bool Edit,  QWidget *parent) :
+DisplayWidget::DisplayWidget(QString newFieldName, DataType::dataType FieldType, bool Edit,  QWidget *parent) :
     QStackedWidget(parent)
 {
     Field=newFieldName;
@@ -28,7 +31,7 @@ DisplayWidget::DisplayWidget(QString newFieldName, QString FieldType, bool Edit,
 
 }
 
-DisplayWidget::DisplayWidget(QString newFieldName, QString FieldType, QVariant Value, bool Edit,  QWidget *parent)
+DisplayWidget::DisplayWidget(QString newFieldName, DataType::dataType FieldType, QVariant Value, bool Edit,  QWidget *parent)
     :QStackedWidget(parent)
 {
     m_Value = Value;
@@ -36,30 +39,41 @@ DisplayWidget::DisplayWidget(QString newFieldName, QString FieldType, QVariant V
     Field=newFieldName;
     Type=FieldType;
     construct();
-
-    if (Type=="TEXT"){
+    switch(Type)
+    {
+    case DataType::Text:{
         ShortText->setText(m_Value.toString());
         TextDisplay->setText(m_Value.toString());
-    }else if (Type=="LONGTEXT"){
+    }
+        break;
+    case DataType::LongText:{
         LongText->setText(m_Value.toString());
         TextDisplay->setText(m_Value.toString());
-    }else if (Type=="IMAGE"){
+    }
+        break;
+    case DataType::Image:{
         QPixmap image = QPixmap(m_Value.toString());
         image= image.scaledToHeight(200);
         ImageDisplay->setPixmap(image);
         ImageDisplay->setFixedSize(QSize(image.width(),image.height()));
         ImageEdit->setPixmap(image);
         ImageEdit->setFixedSize(QSize(image.width(),image.height()));
-    }else if (Type=="IMAGES"){
+    }
+        break;
+    case DataType::Images:{
         setImages();
     }
+        break;
+    }
+
 }
 
 void DisplayWidget::construct(){
     EFieldName = new QLabel(QString("%1: ").arg(Field),Editable);
     NFieldName = new QLabel(QString("%1: ").arg(Field),NEditable);
 
-    if (Type=="TEXT"){
+    switch(Type){
+    case DataType::Text:
         EditLayout->setDirection(QBoxLayout::LeftToRight);
         NEditLayout->setDirection(QBoxLayout::LeftToRight);
         ShortText = new QLineEdit(Editable);
@@ -72,8 +86,8 @@ void DisplayWidget::construct(){
         NEditLayout->addWidget(NFieldName);
         NEditLayout->addWidget(TextDisplay);
         NEditLayout->addStretch(2);
-
-    }else if (Type=="LONGTEXT"){
+        break;
+    case DataType::LongText:
         EditLayout->setDirection(QBoxLayout::TopToBottom);
         NEditLayout->setDirection(QBoxLayout::TopToBottom);
         LongText = new QTextEdit(Editable);
@@ -85,10 +99,8 @@ void DisplayWidget::construct(){
 
         NEditLayout->addWidget(NFieldName);
         NEditLayout->addWidget(TextDisplay);
-
-
-
-    }else if (Type=="IMAGE") {
+        break;
+    case DataType::Image:
         EditLayout->setDirection(QBoxLayout::TopToBottom);
         NEditLayout->setDirection(QBoxLayout::TopToBottom);
 
@@ -105,35 +117,46 @@ void DisplayWidget::construct(){
 
         NEditLayout->addWidget(NFieldName);
         NEditLayout->addWidget(ImageDisplay);
-    }else if (Type=="IMAGES"){
+        break;
+    case DataType::Images:
         EditLayout->setDirection(QBoxLayout::TopToBottom);
         NEditLayout->setDirection(QBoxLayout::TopToBottom);
 
-        ImagesDisplay = new QListWidget(Editable);
+        //ImagesDisplay = new QListWidget(NEditable);
+        ImagesDisplay =new MediaListWidget(NEditable);
         ImagesDisplay->setViewMode(QListView::IconMode);
         ImagesDisplay->setIconSize(QSize(200,200));
         ImagesDisplay->setWrapping(false);
         ImagesDisplay->setItemDelegate(new ImageItemDelegate(ImagesDisplay));
 
-        ImagesEdit = new QListWidget(NEditable);
+        //ImagesEdit = new QListWidget(Editable);
+        ImagesEdit = new MediaListWidget(Editable);
         ImagesEdit->setViewMode(QListView::IconMode);
         ImagesEdit->setIconSize(QSize(200,200));
         ImagesEdit->setWrapping(false);
-        ImagesEdit->setItemDelegate(new ImageItemDelegate(ImagesDisplay));
+        ImagesEdit->setItemDelegate(new ImageItemDelegate(ImagesEdit));
+        ImagesEdit->setEditTriggers(QAbstractItemView::DoubleClicked);
 
-        AddImages= new QPushButton("Add Images");
+        //AddImages= new QPushButton("Add Images");
         //RemoveImages= new QPushButton("Remove Images");
 
-        connect(AddImages,SIGNAL(clicked()),this,SLOT(addImages()));
+        //connect(AddImages,SIGNAL(clicked()),this,SLOT(addImages()));
+        //connect(RemoveImages,SIGNAL(clicked()),this,SLOT(removeImages()));
+
+        connect(ImagesEdit,SIGNAL(updatedImages()),this,SLOT(imagesChanged()));
 
         EditLayout->addWidget(EFieldName);
         EditLayout->addWidget(ImagesEdit);
-        EditLayout->addWidget(AddImages);
+        //EditLayout->addWidget(AddImages);
         //EditLayout->addWidget(RemoveImages);
 
         NEditLayout->addWidget(NFieldName);
         NEditLayout->addWidget(ImagesDisplay);
+        break;
     }
+
+
+
 
     Editable->setLayout(EditLayout);
     NEditable->setLayout(NEditLayout);
@@ -143,16 +166,43 @@ void DisplayWidget::construct(){
     setCurrentIndex(isEdit);
 }
 
+void DisplayWidget::imagesChanged(){
+    /*QStringList filenames=QFileDialog::getOpenFileNames(this,"Add Images","/home","Images (*.png *.gif *.jpg *jpeg)");
+
+
+    QVector<QSqlRecord > currentImages = qvariant_cast<QVector<QSqlRecord> >(m_Value);
+    QSqlRecord newImage = QSqlRecord();
+    for (int i=0;i<filenames.length();i++){
+        newImage.clear();
+        newImage.append(QSqlField("File",QVariant::String));
+        newImage.append(QSqlField("Description",QVariant::String));
+        newImage.append(QSqlField("Status",QVariant::String));
+        newImage.setValue("File",filenames[i]);
+        newImage.setValue("Description","No Description");
+        newImage.setValue("Status","N");
+        currentImages.append(newImage);
+    }
+    m_Value.setValue(currentImages);*/
+    //qDebug()<<"You changed the values, they were:\n"<<qvariant_cast<QVector<QSqlRecord> >(m_Value)<< "\n they now are:\n"<<ImagesEdit->getRecords();
+    m_Value.setValue(ImagesEdit->getRecords());
+
+}
+
 
 
 void DisplayWidget::reload(){
-    if (Type=="TEXT"){
+    switch(Type){
+    case DataType::Text:{
         ShortText->setText(m_Value.toString());
         TextDisplay->setText(m_Value.toString());
-    }else if(Type=="LONGTEXT"){
+    }
+        break;
+    case DataType::LongText:{
         LongText->setText(m_Value.toString());
         TextDisplay->setText(m_Value.toString());
-    }else if (Type=="IMAGE"){
+    }
+        break;
+    case DataType::Image:{
         QPixmap image = QPixmap(m_Value.toString());
         image= image.scaledToHeight(200);
 
@@ -160,38 +210,49 @@ void DisplayWidget::reload(){
         ImageDisplay->setFixedSize(QSize(image.width(),image.height()));
         ImageEdit->setPixmap(image);
         ImageEdit->setFixedSize(QSize(image.width(),image.height()));
-    }else if(Type=="IMAGES"){
+    }
+        break;
+    case DataType::Images:{
         setImages();
     }
+        break;
+    }
+
+    update();
 }
 
 void DisplayWidget::ValueChange(){
-    if (Type=="TEXT"){
+    switch(Type){
+    case DataType::Text:
         setValue(ShortText->text());
-    }else if (Type=="TEXT"){
+        break;
+    case DataType::LongText:
         setValue(LongText->toPlainText());
+        break;
     }
+
 }
 
 
 void DisplayWidget::setImages(){
     QVector<QSqlRecord> Data = qvariant_cast<QVector<QSqlRecord> >(m_Value);
-    qDebug()<<Data;
-    ImagesDisplay->clear();
-    ImagesEdit->clear();
+    //ImagesDisplay->clear();
+    //ImagesEdit->clear();
     for(int i=0;i<Data.size();i++){
-
+        //QString fileDir=Data[i].value("Directory").toString();
+        //fileDir.append(Data[i].value("File").toString());
         QListWidgetItem *edit_item=new QListWidgetItem();
-        edit_item->setText(Data[i].value("Description").toString());
-        edit_item->setIcon(QIcon(Data[i].value("File").toString()));
-        edit_item->setData(Qt::UserRole,Data[i].value("File").toString());
-        edit_item->setData(Qt::UserRole+1,Data[i].value("Status").toString());
+        /*edit_item->setText(Data[i].value("Description").toString());
+        edit_item->setIcon(QIcon(fileDir));
+        edit_item->setData(Qt::UserRole,fileDir);
+        edit_item->setData(Qt::UserRole+1,Data[i].value("Status").toString());*/
+        edit_item->setData(Qt::UserRole,QVariant::fromValue(Data[i]));
+
 
         QListWidgetItem* disp_item =new QListWidgetItem(*edit_item);
-        edit_item->setFlags (edit_item->flags () | Qt::ItemIsEnabled);
+        edit_item->setFlags (edit_item->flags () | Qt::ItemIsEnabled | Qt::ItemIsEditable);
         ImagesDisplay->addItem(disp_item);
         ImagesEdit->addItem(edit_item);
-
 
     }
     ImagesDisplay->update();
@@ -202,12 +263,11 @@ void DisplayWidget::setImages(){
 
 void DisplayWidget::addImages(){
     QStringList filenames=QFileDialog::getOpenFileNames(this,"Add Images","/home","Images (*.png *.gif *.jpg *jpeg)");
-    //msgbx.setText(QString("%1").arg(filenames.length()));
-    //msgbx.exec();
+
+
     QVector<QSqlRecord > currentImages = qvariant_cast<QVector<QSqlRecord> >(m_Value);
     QSqlRecord newImage = QSqlRecord();
     for (int i=0;i<filenames.length();i++){
-
         newImage.clear();
         newImage.append(QSqlField("File",QVariant::String));
         newImage.append(QSqlField("Description",QVariant::String));
@@ -217,13 +277,44 @@ void DisplayWidget::addImages(){
         newImage.setValue("Status","N");
         currentImages.append(newImage);
     }
-    //qDebug()<<currentImages;
     m_Value.setValue(currentImages);
     setImages();
 
 }
 
 void DisplayWidget::removeImages(){
+    QList<QListWidgetItem *> selItems =ImagesEdit->selectedItems();
+    for(int i=0;i<selItems.count();i++){
+        if(selItems.at(i)->data(Qt::UserRole+1).toString()=="N"){
+            ImagesEdit->removeItemWidget(selItems.at(i));
+        }else if(selItems.at(i)->data(Qt::UserRole+1).toString()=="O"){
+            selItems.at(i)->setData(Qt::UserRole+1,"R");
+            selItems.at(i)->setHidden(true);
+        }
+
+    }
+    updateValue();
+}
+
+void DisplayWidget::updateValue(){
+    QVector<QSqlRecord> newImages;
+    QSqlRecord newImage = QSqlRecord();
+    newImage.append(QSqlField("File",QVariant::String));
+    newImage.append(QSqlField("Description",QVariant::String));
+    newImage.append(QSqlField("Status",QVariant::String));
+
+    for (int i=0;i<ImagesEdit->count();i++){
+        newImage.setValue("File",ImagesEdit->item(i)->data(Qt::UserRole));
+        newImage.setValue("Status",ImagesEdit->item(i)->data(Qt::UserRole+1));
+        newImage.setValue("Description",ImagesEdit->item(i)->text());
+        newImages.append(newImage);
+        qDebug()<<"new value: "<<newImage;
+        newImage.clearValues();
+    }
+    m_Value.setValue(newImages);
+}
+
+/*void DisplayWidget::removeImages(){
     QVector <QVector <QString> > Images = qvariant_cast<QVector<QVector<QString> > >(m_Value);
     for(int i =0;i<ImagesEdit->count();i++){
         QListWidgetItem *currItem = ImagesEdit->item(i);
@@ -240,7 +331,7 @@ void DisplayWidget::removeImages(){
         }
     }
     m_Value.setValue(Images);
-}
+}*/
 
 void DisplayWidget::changeImage(){
     QString filename = QFileDialog::getOpenFileName(this,"Set Image","/home","Images (*.png *.gif *.jpg *jpeg)");

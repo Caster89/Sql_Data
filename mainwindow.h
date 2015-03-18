@@ -32,6 +32,9 @@ private slots:
     QVector<QVector<QString> > getPrimary();
     QVector<QVector<QString> > getFields();
     void createNewRecord();
+    bool deleteRecord();
+    bool updateRecord();
+    void printRecord();
 
 
 private:

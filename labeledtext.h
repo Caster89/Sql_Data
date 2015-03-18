@@ -10,12 +10,13 @@
 #include <QIcon>
 #include <QBoxLayout>
 #include <QPushButton>
+#include <datatype.h>
 
 class LabeledText : public QWidget
 {
     Q_OBJECT
 public:
-    LabeledText(QWidget *parent,QString text_type,QString label);
+    LabeledText(QWidget *parent,DataType::dataType text_type,QString label);
     void setValue(QString newValue);
     void setField(QString newField);
     void setTable(QString newTable);
@@ -25,7 +26,7 @@ public:
 
     QString getLabel();
     QVariant getValue();
-    QString getType();
+    DataType::dataType getType();
     QVector<QVector<QVector<QString> > > getImage();
     QString getField();
     QString getTable();
@@ -49,7 +50,7 @@ private:
     QTextEdit *txtEdit;
     QLineEdit *lnEdit;
     QListWidget *imgEdit;
-    QString txtType;
+    DataType::dataType txtType;
     QVector<QVector<QVector<QString> > > Images;
     QString Field_name;
     QString Table_name;

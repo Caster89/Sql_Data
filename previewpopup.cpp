@@ -35,21 +35,21 @@ PreviewPopup::PreviewPopup(QWidget *parent, QSqlRecord sel_record ,QVector<QLabe
 
             //If the field is marked as text then the lable position is increaed by one and the text is set on the
             //same row of the label
-                if(Fields[i][2]=="TEXT"){
-                    prwValues.append(new LabeledText(scrArea,"TEXT",Fields[i][0]));
+                if(Fields[i][2].toInt()==DataType::Text){
+                    prwValues.append(new LabeledText(scrArea,DataType::Text,Fields[i][0]));
                     prwValues.last()->setValue(sel_record.value(i).toString());
                     prwValues.last()->setEditable(false);
                     scrLayout->addWidget(prwValues[i]);
                     //If the field is marked as long text or image the label position is increasd by 4 and the label is
             //set one row below the label
-                }else if(Fields[i][2]=="LONG TEXT" ){
-                    prwValues.append(new LabeledText(scrArea,"LONG TEXT",Fields[i][0]));
+                }else if(Fields[i][2].toInt()==DataType::LongText ){
+                    prwValues.append(new LabeledText(scrArea,DataType::LongText,Fields[i][0]));
                     prwValues.last()->setValue(sel_record.value(i).toString());
                     prwValues.last()->setEditable(false);
                     scrLayout->addWidget(prwValues[i]);
 
-                }else if(Fields[i][2]=="IMAGE"){
-                    prwValues.append(new LabeledText(scrArea,"IMAGE",Fields[i][0]));
+                }else if(Fields[i][2].toInt()==DataType::Image){
+                    prwValues.append(new LabeledText(scrArea,DataType::Image,Fields[i][0]));
                     prwValues.last()->setEditable(false);
                     scrLayout->addWidget(prwValues[i]);
                 }

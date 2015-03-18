@@ -8,17 +8,20 @@
 #include <QTextEdit>
 #include <QLineEdit>
 #include <QListWidget>
+#include <medialistwidget.h>
 #include <QBoxLayout>
 #include <QPushButton>
 #include <QDebug>
+#include <mysqltablemodel.h>
+#include <datatype.h>
 
 class DisplayWidget : public QStackedWidget
 {
     Q_OBJECT
     Q_PROPERTY(QVariant Value READ getValue WRITE setValue)
 public:
-    DisplayWidget(QString newFieldName, QString FieldType, QVariant Value, bool Edit=0, QWidget *parent = 0);
-    DisplayWidget(QString newFieldName, QString FieldType, bool Edit=0, QWidget *parent = 0);
+    DisplayWidget(QString newFieldName, DataType::dataType FieldType, QVariant Value, bool Edit=0, QWidget *parent = 0);
+    DisplayWidget(QString newFieldName, DataType::dataType FieldType, bool Edit=0, QWidget *parent = 0);
 
 
     inline QVariant getValue(){
@@ -29,7 +32,7 @@ public:
 
     void setImages();
 
-    void removeImages();
+    //void removeImages();
     void changeImage();
     void removeImage();
     void reload();
@@ -44,6 +47,7 @@ signals:
 public slots:
     void ValueChange();
     void addImages();
+    void removeImages();
 
 
 private:
@@ -51,15 +55,16 @@ private:
     QWidget *NEditable= new QWidget;
     bool isEdit;
     QVariant m_Value;
-    QString Type;
+    //QString Type;
+    DataType::dataType Type;
     QString Field;
     QLabel *EFieldName;
     QLabel *NFieldName;
     QTextEdit *LongText;
     QLineEdit *ShortText;
     QLabel *TextDisplay;
-    QListWidget *ImagesDisplay;
-    QListWidget *ImagesEdit;
+    MediaListWidget *ImagesDisplay;
+    MediaListWidget *ImagesEdit;
     QPushButton *AddImages;
     QPushButton *RemoveImages;
     QLabel *ImageDisplay;
@@ -70,8 +75,11 @@ private:
     QBoxLayout *NEditLayout=new QBoxLayout(QBoxLayout::TopToBottom);
     void updateValue();
 private slots:
+    void imagesChanged();
 
 
 };
+Q_DECLARE_METATYPE(QSqlRecord);
 
 #endif // DISPLAYWIDGET_H
+

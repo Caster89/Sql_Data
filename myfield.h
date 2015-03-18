@@ -1,5 +1,6 @@
 #ifndef MYFIELD_H
 #define MYFIELD_H
+#include <datatype.h>
 #include <QString>
 
 class MyField
@@ -8,7 +9,7 @@ public:
     //enum Type{"TEXT","LONG_TEXT","IMAGE","IMAGES"};
     MyField();
 
-    MyField(QString Name, QString Table="Main_table", QString Field_Type = "TEXT", bool Vis_Preview = false, bool Vis_Table = false, int Position = 0, bool Primary = false);
+    MyField(QString Name, QString Table="Main_table", DataType::dataType Field_Type = DataType::Text, bool Vis_Preview = false, bool Vis_Table = false, int Position = 0, bool Primary = false);
 
     MyField(const MyField &orgField);
 
@@ -23,7 +24,7 @@ public:
     inline QString getTable() const{
         return Field_Table;
     }
-    inline QString getType() const{
+    inline DataType::dataType getType() const{
         return Field_Type;
     }
     inline bool getVisPreview() const{
@@ -42,7 +43,7 @@ public:
 private:
     QString Field_Name;
     QString Field_Table;
-    QString Field_Type;
+    DataType::dataType Field_Type;
     bool Field_Vis_Preview;
     bool Field_Vis_Table;
     int Field_Pos;

@@ -1,5 +1,6 @@
 #include "mysqltablemodel.h"
 #include <QtWidgets>
+#include <QFileInfoList>
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QVector>
@@ -10,6 +11,7 @@
 #include <QSqlRecord>
 #include <QtDebug>
 #include <QSqlField>
+#include <QSqlDriver>
 #include <QDir>
 #include "myfield.h"
 #include "querygenerator.h"
@@ -24,7 +26,9 @@
 MySqlTableModel::MySqlTableModel(QWidget *parent, QSqlDatabase newDB)
     :QSqlTableModel(parent,newDB)
 {
-    //Database = newDB;
+    baseDirectory=newDB.databaseName();
+    baseDirectory.cdUp();
+    qDebug()<<"Text: "<<DataType::Text<<"\n Long Text: "<<DataType::LongText<<"\n Image: "<<DataType::Image<<"\n Images: "<<DataType::Images<<"\n Other: "<<MySqlTableModel::Other;
 }
 
 void MySqlTableModel::setTable(const QString &tableName){
@@ -51,7 +55,6 @@ bool MySqlTableModel::select()
     bool isOK = QSqlTableModel::select();
 
 
-
     QSqlQuery query;
     /*Next a query is created in the 'Fields_table', selecting all entries,
     and ordering them by the 'Position' column. num_cols is set to 0
@@ -64,7 +67,7 @@ bool MySqlTableModel::select()
      */
     while (query.next()){
         num_cols++;
-        MyField temp_vec = MyField(query.value(0).toString(),query.value(1).toString(),query.value(2).toString(),query.value(3).toBool(),query.value(4).toBool(),query.value(5).toInt(),query.value(6).toBool());
+        MyField temp_vec = MyField(query.value(0).toString(),query.value(1).toString(),DataType::dataType(query.value(2).toInt()),query.value(3).toBool(),query.value(4).toBool(),query.value(5).toInt(),query.value(6).toBool());
         Fields.append(temp_vec);
         //baseRecord.append(QSqlField(query.value(0).toString()));
         /*The field is checked to see if it is a primary one, in which case it is added
@@ -77,7 +80,6 @@ bool MySqlTableModel::select()
 
 
     }
-    qDebug()<<"Fields array created";
     /*Once the columns are determined the rows are read. Each record is stored in
      *a temporary QSqlRecord. Next, if the row is not stored in the Main_table, and
      *is thus stored in another table, the other table is queried, the results stored
@@ -128,22 +130,13 @@ bool MySqlTableModel::select()
     return isOK;
 }
 
-/*int MySqlTableModel::rowCount(const QModelIndex &parent) const
-{
-    return num_rows;
-}
 
-int MySqlTableModel::columnCount(const QModelIndex &parent) const
-{
-    return num_cols;
-}*/
 
 QVariant MySqlTableModel::data(const QModelIndex &index, int role) const
 {
 
 
     QVariant originalValue=QSqlTableModel::data(index,role);
-    qDebug()<<"The original value of "<<baseRecord.fieldName(index.column())<<"is:\n"<<originalValue;
 
     if(Fields[index.column()].getTable()!="Main_table"){
 
@@ -153,14 +146,13 @@ QVariant MySqlTableModel::data(const QModelIndex &index, int role) const
         QString where=QueryGenerator::WhereStat(primValues);
         stmt.append(QLatin1String(" "));
         stmt.append(where);
-        qDebug()<<stmt;
         QSqlQuery foreignTableQuery;
         foreignTableQuery.exec(stmt);
-        qDebug()<<foreignTableQuery.size();
+        QVector<QSqlRecord> returnVector;
         while(foreignTableQuery.next()){
-            qDebug()<<"Entered cycle";
-            qDebug()<<foreignTableQuery.record();
+            returnVector.append(foreignTableQuery.record());
         }
+        return QVariant::fromValue(returnVector);
     }
     if (!index.isValid()||(role!=Qt::DisplayRole && role!= Qt::EditRole))
              return QVariant();
@@ -211,13 +203,21 @@ QVariant MySqlTableModel::data(const QModelIndex &index, int role) const
 
 }
 
+//*****************************************************************//
+//insertRow is called when a new row has to be inserted. Once the  //
+//row is created a method will be called ot populate it            //
+//*****************************************************************//
 bool MySqlTableModel::insertRow(int row, const QModelIndex &parent){
+    if( QSqlTableModel::insertRow(row,parent)){
+        if(editStrategy()==OnRowChange)
+            insertIndex=row;
+        return true;
+    }
+    return false;
 
-    qDebug()<<"Current number of rows:"<<num_rows;
     if(row>Values.size()){
         return false;
     }else if(row<0){
-        qDebug()<<"Adding to bottom";
         beginInsertRows(parent,Values.size(),Values.size());
         Values.append(QSqlRecord(baseRecord));
         endInsertRows();
@@ -225,10 +225,8 @@ bool MySqlTableModel::insertRow(int row, const QModelIndex &parent){
         bufferPosition=num_rows;
         bufferType="INSERT";
         num_rows++;
-        qDebug()<<"Actual number of new rows: "<<Values.size()<<" Number memorized: "<<num_rows;
         return true;
     }else{
-        qDebug()<<"Insert row";
         beginInsertRows(parent,row,row);
         Values.insert(row,QSqlRecord(baseRecord));
         endInsertRows();
@@ -236,10 +234,277 @@ bool MySqlTableModel::insertRow(int row, const QModelIndex &parent){
         bufferPosition=row;
         bufferType="INSERT";
         num_rows++;
-        qDebug()<<"Actual number of new rows: "<<Values.size()<<" Number memorized: "<<num_rows;
         return true;
     }
 
+}
+
+//*****************************************************************//
+//insertRowIntoTable is used to populate the values of a new row   //
+//in the table. The record is taken and the values for external   //
+//tables are saved in a separate record, along with the name of   //
+//the table into which they have to be inserted. The original     //
+//method is then used to insert the cleaned records, and the      //
+//external values are inserted separatelly. The directory for the //
+//record is created, and the files copied in the appropriate      //
+//directory. The records are inserted using an overloaded function//
+//insertRowIntoTable which takes as input the record to insert the//
+//primary values and the name of the table to insert              //
+//*****************************************************************//
+bool MySqlTableModel::insertRowIntoTable(const QSqlRecord &values){
+    QSqlRecord rec=values;
+    if(!canUpdate(&rec)){
+        revert();
+        return false;
+    }
+    QSqlRecord sepRec=QSqlRecord();
+    for(int i=0;i<Fields.size();i++){
+        if(Fields[i].getTable()!="Main_table" && rec.value(rec.indexOf(Fields[i].getName())).isValid()){
+            sepRec.append(rec.field(Fields[i].getName()));
+            sepRec.setValue(Fields[i].getName(),rec.value(Fields[i].getName()));
+            rec.setNull(Fields[i].getName());
+        }
+    }
+    if(!QSqlTableModel::insertRowIntoTable(rec))
+        return false;
+
+    //Should probably insert a test ot check if the record can be created.
+    //Possibly a return type for createDirectory of type bool
+    createDirectory(rec);
+
+    for(int i=0;i<Fields.size();++i){
+        if(Fields[i].getTable()!="Main_table" && sepRec.value(Fields[i].getName()).isValid()){
+            QVector<QSqlRecord> tempRecords=qvariant_cast<QVector<QSqlRecord> >(sepRec.value(Fields[i].getName()));
+            for(int n=0;n<tempRecords.size();++n)
+                insertRowIntoTable(tempRecords[n],getPrimary(&rec),Fields[i].getTable());
+        }
+    }
+
+    for(int i=0;i<Fields.size();++i){
+        if(Fields[i].getTable()!="Main_table" && rec.value(rec.indexOf(Fields[i].getName())).isValid()){
+            QVector<QSqlRecord> tempRecords=qvariant_cast<QVector<QSqlRecord> >(rec.value(rec.indexOf(Fields[i].getName())));
+            rec.setNull(Fields[i].getName());
+            for(int n=0;n<tempRecords.size();++n)
+                insertRowIntoTable(tempRecords[n],getPrimary(&rec),Fields[i].getTable());
+            rec.setNull(rec.indexOf(Fields[i].getName()));
+        }
+    }
+    QSqlTableModel::insertRowIntoTable(rec);
+}
+
+
+//*****************************************************************//
+//insertRowIntoTable overloaded function is used to insert records //
+//in alterante tables                                              //
+//*****************************************************************//
+bool MySqlTableModel::insertRowIntoTable(const QSqlRecord &values,QSqlRecord primaryValues, QString table){
+    QSqlRecord rec=values;
+    for(int i=0;i<primaryValues.count();++i){
+        rec.insert(i,primaryValues.field(i));
+        rec.setValue(i,primaryValues.value(i));
+    }
+    rec.setValue("Status","O");
+    QString fileDir=copyFile(values,primaryValues,table);
+    QFileInfo file=QFileInfo(fileDir);
+    rec.append(QSqlField("Directory",QVariant::String));
+    rec.setValue("Directory",file.absolutePath().append(QDir::separator()));
+    rec.setValue("File",file.fileName());
+    QString stmt=QueryGenerator::InsertStat(table,rec);
+    QSqlQuery query;
+    query.exec(stmt);
+    return true;
+}
+
+//*****************************************************************//
+//updateRowInTable is used to change values of existing records. As//
+//with insertRowIntoTable the record is first divided in values    //
+//which should be inserted in the main table and values which have //
+//to be inserted in alternate tables. A check is done to make sure //
+//that the primary values have not changed, in which case additional//
+//changes have to be made to the directory,as well as checks to make//
+//sure the primary values are valid. Once the basic values are     //
+//updated the values for the alternate tables are scanned 1-by-1   //
+//based on the values of Status: O-M-R the records are either      //
+//ignored, updated or removed                                      //
+//*****************************************************************//
+bool MySqlTableModel::updateRowInTable(int row, const QSqlRecord &values){
+    //The new values are copied in a new record in order to manipulate it without
+    //changing the original values
+    QSqlRecord rec=values;
+    //A separate record is created to store the data which has to be inserted in
+    //different tables
+    QSqlRecord sepRec=QSqlRecord();
+    //primChanges stores whether the primary values of the field have changed
+    bool primChanged=false;
+    //Two new records are created to store the primary fields of both the old and the
+    //new record. The new one should be empty if the new records have not been copied
+    QSqlRecord origRecord=primaryValues(row);
+    QSqlRecord newRec=getPrimary(&rec);
+    //The fields which have to be stored in a different table are stored in sepRec and
+    //removed from the original value
+    for(int i=0;i<Fields.size();i++){
+        if(Fields[i].getTable()!="Main_table" && rec.value(rec.indexOf(Fields[i].getName())).isValid()&& !rec.value(rec.indexOf(Fields[i].getName())).isNull()){
+            sepRec.append(rec.field(Fields[i].getName()));
+            sepRec.setValue(Fields[i].getName(),rec.value(Fields[i].getName()));
+            rec.setNull(Fields[i].getName());
+        }
+
+    }
+        if(newRec!=origRecord){
+            primChanged=true;
+        }
+    //A last check is done to make sure that the values have not been changed to
+    //the same as the old
+    if(newRec==origRecord)
+        primChanged=false;
+    //The record is updated using the original method
+    if(!QSqlTableModel::updateRowInTable(row,rec))
+        return false;
+    qDebug()<<sepRec;
+    for(int i=0;i<sepRec.count();i++){
+        QString tableName=sepRec.fieldName(i);
+        QVector<QSqlRecord>  fileList=qvariant_cast<QVector<QSqlRecord> >(sepRec.value(i));
+        for(int n=0;n<fileList.size();n++){
+            QSqlRecord currRecord=fileList[n];
+            //QSqlRecord currRecord=separateDir(fileList[n]);
+            //qDebug()<<"Current list: "<<fileList[n];
+            //qDebug()<<"Corrected record: "<<currRecord;
+            if(currRecord.value("Status").toString()=="N"){
+                currRecord=separateDir(currRecord);
+                insertRowIntoTable(fileList[n],origRecord,tableName);
+            }else if(currRecord.value("Status").toString()=="R"){
+                deleteFromTable(currRecord,tableName);
+            }else if (currRecord.value("Status").toString()=="M"){
+                //qDebug()<<"***********************\n You chose to update the a value, in particulare:\n"<<newRec<<"\n Using these new Values:\n"<<currRecord<<"\n in the following table: "<<tableName;
+                updateRowInTable(currRecord,newRec,tableName);
+            }
+        }
+    }
+    //Once the value is changed in the main table if primary values have been changed 
+    //the folder has to be renames as well as all the values in the related tables
+    if (primChanged){
+        qDebug()<<"Primary Changed";
+        primaryChange(origRecord,newRec);
+    }
+}
+
+bool MySqlTableModel::updateRowInTable(const QSqlRecord &values,QSqlRecord primaryValues,QString table){
+    QSqlRecord rec=values;
+    QSqlRecord whereValues=QSqlRecord();
+    whereValues.append(values.field("File"));
+    whereValues.append(values.field("Directory"));
+    whereValues.setValue("File",values.value("File"));
+    whereValues.setValue("Directory",values.value("Directory"));
+    for(int i=0;i<primaryValues.count();++i){
+        rec.insert(i,primaryValues.field(i));
+        rec.setValue(i,primaryValues.value(i));
+    }
+    rec.setValue("Status","O");
+
+    QString stmt=QueryGenerator::UpdateStat(table,rec);
+    QString whereStmt=QueryGenerator::WhereStat(whereValues);
+    stmt.append(" ");
+    stmt.append(whereStmt);
+    QSqlQuery query;
+    query.exec(stmt);
+    return true;
+}
+
+bool MySqlTableModel::primaryChange(QSqlRecord oldPrim, QSqlRecord newPrim){
+    //The old directory and new directory are created
+    QString oldDir=GetDirectory(oldPrim);
+    QString newDir=GetDirectory(newPrim);
+
+    //The directory is renamed from the old to the new
+    QDir renameDir=QDir(oldDir);
+    qDebug()<<"The old directory is: "<<oldDir<<"\n The new directory is: "<<newDir;
+    qDebug()<<"Renaming was successful: "<<renameDir.rename(oldDir,newDir);
+
+    //The new directory has a separator added to the end
+    //The new record has a Diretory field added to it
+    newDir.append(QDir::separator());
+    newPrim.append(QSqlField("Directory"));
+    for(int i=0;i<Fields.size();++i){
+        //For every Filed not contained in the main table the records are updated
+        if(Fields[i].getTable()!="Main_table"){
+            //The current table is recorded and added to the end of the directory
+            QString tableDir=newDir;
+            tableDir.append(Fields[i].getTable());
+            tableDir.append(QDir::separator());
+            //The value for the current directory is set in the new record
+            newPrim.setValue("Directory",tableDir);
+            //The update statement is created with the new primary values and the new
+            //directory
+            QString upStmt= QueryGenerator::UpdateStat(Fields[i].getTable(),newPrim);
+            upStmt.append(' ');
+            upStmt.append(QueryGenerator::WhereStat(oldPrim));
+
+            QSqlQuery selQuery;
+            selQuery.exec(upStmt);
+
+            
+        }
+    }
+    return true;
+}
+
+bool MySqlTableModel::deleteRowFromTable(int row){
+    if(QSqlTableModel::deleteRowFromTable(row)){
+        QSqlRecord recToDel = primaryValues(row);
+        for(int i=0;i<Fields.count();++i){
+            if(Fields[i].getTable()!="Main_table"){
+                QString stmt=QueryGenerator::DeleteStat(Fields[i].getTable(),recToDel);
+                QSqlQuery dltQuery;
+                if(!dltQuery.exec(stmt))
+                    return false;
+            }
+        }
+        deleteRecordDirectory(recToDel);
+        return true;
+    }
+    return false;
+}
+
+bool MySqlTableModel::deleteFromTable(const QSqlRecord &values, QString tableName){
+    QString fileDir=values.value("Directory").toString();
+    fileDir.append(values.value("File").toString());
+    QFile fileToDel(fileDir);
+    qDebug()<<"deleting file"<<fileDir;
+
+    QSqlRecord primValues=database().primaryIndex(tableName);
+    for (int i=0;i<primValues.count();i++){
+        primValues.setValue(i,values.value(primValues.fieldName(i)));
+    }
+    QString dltStmt =QueryGenerator::DeleteStat(tableName,primValues);
+    qDebug()<<"Delete string is: "<<dltStmt;
+    QSqlQuery delQuery;
+    if (delQuery.exec(dltStmt)){
+        if(fileToDel.remove())
+            return true;
+    }
+    return false;
+}
+
+QString MySqlTableModel::copyFile(const QSqlRecord &values,QSqlRecord primaryValues, QString table){
+
+
+
+    QString path=baseDirectory.absolutePath();
+    path.append(QDir::separator());
+    for(int i=0;i<primaryValues.count();++i){
+        path.append(primaryValues.value(i).toString());
+        path.append('_');
+    }
+    path.chop(1);
+    path.append(QDir::separator());
+    path.append(table);
+    path.append(QDir::separator());
+    QFileInfo file(values.value("File").toString());
+    path.append(file.fileName());
+    QFile origFile(file.absoluteFilePath());
+    if(origFile.copy(path))
+        return path;
+    return "";
 }
 
 void MySqlTableModel::clearEditBuffer(){
@@ -249,6 +514,7 @@ void MySqlTableModel::clearEditBuffer(){
 }
 
 void MySqlTableModel::revert(){
+    QSqlTableModel::revert();
     if (bufferType=="INSERT"){
 
         Values.remove(bufferPosition);
@@ -257,7 +523,18 @@ void MySqlTableModel::revert(){
     clearEditBuffer();
 }
 
+//*****************************************************************//
+//setData is called by the mapper when commit() is called, which in//
+//turn is called by the submit() command.                          //
+//QWidgetMapper->submit()->commit()                                //
+//*****************************************************************//
 bool MySqlTableModel::setData(const QModelIndex &index, const QVariant &value, int role){
+
+    if(Fields[index.column()].getTable()=="Main_table"){
+    }else{
+        QVector<QSqlRecord> data = qvariant_cast<QVector<QSqlRecord> >(value);
+    }
+    return QSqlTableModel::setData(index,value,role);
     if(QSqlTableModel::setData(index,value,role)){
         switch (editStrategy()) {
         case OnRowChange:
@@ -269,8 +546,6 @@ bool MySqlTableModel::setData(const QModelIndex &index, const QVariant &value, i
     return false;
 
     if(bufferType=="INSERT" && index.row()==bufferPosition){
-        qDebug()<<"Setting Data: "<<index.column();
-        qDebug()<<"to: "<<value.toString();
         bufferRecord.append(baseRecord.field(index.column()));
         bufferRecord.setValue(index.column(),value);
         return true;
@@ -304,22 +579,9 @@ QVariant MySqlTableModel::headerData(int section, Qt::Orientation orientation, i
     return QVariant();
 }
 
-bool MySqlTableModel::canUpdate(QSqlRecord *avlbRecord){
-    QSqlRecord CkcRecord= getPrimary(avlbRecord);
-    QString selQuery=QueryGen.SelectStat("Main_table");
-    QString whereQuery=QueryGen.WhereStat(CkcRecord);
-    QString compQuery= selQuery + " " + whereQuery;
-    QSqlQuery ckcAvlb(compQuery);
-    ckcAvlb.exec();
-    while(ckcAvlb.next()){
-        return false;
-    }
-    return true;
-
-}
 
 bool MySqlTableModel::submit(){
-
+    return QSqlTableModel::submit();
 }
 
 bool MySqlTableModel::insertRows(int row, int count, const QModelIndex &parent){
@@ -349,16 +611,59 @@ void MySqlTableModel::revertRow(int row){
 }
 
 bool MySqlTableModel::removeRows(int row,int count, const QModelIndex &parent){
-    if(QSqlTableModel::removeRows(row,count,parent)){
+    if(QSqlTableModel::removeRows(row,count)){
+
         for(int i=0;i<count;++i){
             if(row+1==insertIndex)
                 insertIndex=-1;
         }
+        select();
         return true;
     }
     return false;
+    /*bool mkIt=QSqlTableModel::removeRows(row,count);
+    return mkIt;
+    if (parent.isValid() || row < 0 || count <= 0)
+           return false;
+
+       int i;
+       switch (editStrategy()) {
+       case OnFieldChange:
+       case OnRowChange:
+           for (i = 0; i < count; ++i) {
+               if (row + i == insertIndex)
+                   qDebug()<<"Shoufl revert row";
+               else if (!QSqlTableModel::deleteRowFromTable(row + i))
+                   return false;
+           }
+           select();
+           break;
+       case OnManualSubmit:
+           for (i = 0; i < count; ++i) {
+               int idx = row + i;
+               if (idx >= rowCount())
+                   return false;
+
+           }
+           break;
+       }
+       return true;
+    /*qDebug()<<"got in here";
+    if (parent.isValid() || row < 0 || count <= 0)
+        qDebug()<<"Would return false";
+
+
+    qDebug()<<QSqlTableModel::removeRows(3,1);
+    return true;*/
+
+
 }
 
+//*****************************************************************//
+//submitAll uses the original submit all, which in turn calls the  //
+//different methods to update insert or remove, based on the       //
+//required operation                                               //
+//*****************************************************************//
 bool MySqlTableModel::submitAll(){
 
 
@@ -381,12 +686,11 @@ bool MySqlTableModel::submitAll(){
 
     if(bufferType=="INSERT"||bufferPrimary!=getPrimary(&Values[bufferPosition])){
         if(!canUpdate(&bufferRecord)){
-            qDebug()<<"Cannot Update";
             return false;
         }
     }
     if (bufferType=="INSERT"){
-        CreateDirectory(bufferPrimary);
+        createDirectory(bufferPrimary);
         QString insert_stat=QueryGen.InsertStat("Main_table",bufferPrimary);
 
         //query.exec(insert_stat);
@@ -397,7 +701,7 @@ bool MySqlTableModel::submitAll(){
 
             insertImages(Fields[i].getTable(),bufferPrimary, bufferRecord.value(fieldName).value<QVector<QSqlRecord> >());
             bufferRecord.remove(bufferRecord.indexOf(fieldName));
-        }else if(Fields[i].getType()=="IMAGE"){
+        }else if(Fields[i].getType()==DataType::Image){
             if(bufferRecord.value(fieldName).toString()!=Values[bufferPosition].value(fieldName).toString()){
                 if (bufferRecord.value(fieldName).toString().isEmpty()){
                     //QString imgDir=GetDirectory();
@@ -414,6 +718,23 @@ bool MySqlTableModel::submitAll(){
     */
 }
 
+bool MySqlTableModel::canUpdate(QSqlRecord *avlbRecord){
+    QSqlRecord primValues = getPrimary(avlbRecord);
+    QString stmt= QueryGenerator::SelectStat("Main_table");
+    QString wStmt=QueryGenerator::WhereStat(primValues);
+    stmt.append(' ');
+    stmt.append(wStmt);
+    qDebug()<<"Can update"<<stmt;
+    QSqlQuery qCanUpdate =QSqlQuery();
+    qCanUpdate.exec(stmt);
+
+    while(qCanUpdate.next()){
+        qDebug()<<qCanUpdate.record();
+        return false;
+    }
+    return true;
+}
+
 QSqlRecord MySqlTableModel::getPrimary(const QModelIndex &index) const{
     QSqlRecord record=primaryRecord;
     for(int i=0;i<record.count();++i){
@@ -423,10 +744,14 @@ QSqlRecord MySqlTableModel::getPrimary(const QModelIndex &index) const{
     return record;
 }
 
+QSqlRecord MySqlTableModel::getPrimary(int row) const{
+    QModelIndex indx = index(row,0);
+    return getPrimary(indx);
+}
+
 QSqlRecord MySqlTableModel::getPrimary(QSqlRecord *curr_Record) const{
     QSqlRecord record=primaryRecord;
     for(int i=0;i<record.count();++i)
-
         record.setValue(i,curr_Record->value(curr_Record->indexOf(record.fieldName(i))));
     return record;
     /*QSqlRecord ret_Record = QSqlRecord();
@@ -438,7 +763,32 @@ QSqlRecord MySqlTableModel::getPrimary(QSqlRecord *curr_Record) const{
     return ret_Record;*/
 }
 
-bool MySqlTableModel::CreateDirectory(QSqlRecord newRec){
+bool MySqlTableModel::createDirectory(QSqlRecord newRec){
+   QDir baseDir(database().databaseName());
+   baseDir.cdUp();
+   QString createDir="";
+
+   QSqlRecord primValues=getPrimary(&newRec);
+   for(int i=0;i<primValues.count();++i){
+       createDir.append(primValues.value(i).toString());
+       createDir.append('_');
+   }
+   createDir.chop(1);
+   if(!baseDir.mkdir(createDir))
+       return false;
+   QString addDir;
+   for(int i=0;i<Fields.size();++i){
+       if(Fields[i].getTable()!="Main_table"){
+           addDir=createDir;
+           addDir.append(QDir::separator());
+           addDir.append(Fields[i].getTable());
+           if(!baseDir.mkdir(addDir)){
+               deleteRecordDirectory(newRec);
+               return false;
+           }
+       }
+   }
+   return true;
    QString newDir=Database.databaseName();
    QStringList newDirList = newDir.split(QDir::separator());
    newDirList.removeLast();
@@ -452,23 +802,45 @@ bool MySqlTableModel::CreateDirectory(QSqlRecord newRec){
 
    QDir currDir=QDir::currentPath();
    currDir.mkdir(newDir);
-   qDebug()<<"Base Directory: "<<newDir;
    for (int i=0;i<Fields.size();i++){
        if(Fields[i].getTable()!="Main_table"){
            QString subDir=newDir;
            subDir.append(QDir::separator());
            subDir.append(Fields[i].getName());
-           qDebug()<<"Sub Directory: "<<subDir;
            currDir.mkdir(subDir);
        }
    }
 }
 
+bool MySqlTableModel::deleteRecordDirectory(QSqlRecord newRec){
+    QDir baseDir(database().databaseName());
+    baseDir.cdUp();
+    QString createDir="";
+
+    QSqlRecord primValues=getPrimary(&newRec);
+    for(int i=0;i<primValues.count();++i){
+        createDir.append(primValues.value(i).toString());
+        createDir.append('_');
+    }
+    createDir.chop(1);
+    baseDir.cd(createDir);
+    if(baseDir.removeRecursively())
+        return true;
+    return false;
+}
+
+QSqlRecord MySqlTableModel::separateDir(QSqlRecord altRecord){
+    QFileInfo compDirectory = QFileInfo(altRecord.value("File").toString());
+    altRecord.append(QSqlField("Directory",QVariant::String));
+    altRecord.setValue("Directory",compDirectory.absolutePath().append(QDir::separator()));
+    altRecord.setValue("File",compDirectory.fileName());
+    return altRecord;
+
+}
+
 QString MySqlTableModel::GetDirectory(QSqlRecord newRec){
-    QString newDir=Database.databaseName();
-    QStringList newDirList=newDir.split(QDir::separator());
-    newDirList.removeLast();
-    newDir=newDirList.join(QDir::separator());
+    QString newDir=baseDirectory.absolutePath();
+
     newDir.append(QDir::separator());
     for(int i=0;i<newRec.count();i++){
         newDir.append(newRec.value(i).toString());
@@ -484,7 +856,6 @@ QString MySqlTableModel::GetDirectory(QSqlRecord newRec){
 bool MySqlTableModel::insertImages(QString TableName, QSqlRecord Primary_Values, QVector<QSqlRecord> Images){
     QString workDir=Database.databaseName();
     QStringList workDirList=workDir.split(QDir::separator());
-    qDebug()<<"List: "<<workDirList;
     workDirList.removeLast();
     workDir=workDirList.join(QDir::separator());
     workDir.append(QDir::separator());
@@ -496,7 +867,6 @@ bool MySqlTableModel::insertImages(QString TableName, QSqlRecord Primary_Values,
     workDir.chop(1);
     workDir.append(QDir::separator());
     workDir.append(TableName);
-    qDebug()<<"Image directory: "<<workDir;
 
     QSqlRecord currImage;
     for (int i=0;i<Images.size();i++){
@@ -506,20 +876,17 @@ bool MySqlTableModel::insertImages(QString TableName, QSqlRecord Primary_Values,
                 currImage.append(Primary_Values.field(n));
                 currImage.setValue(Primary_Values.fieldName(n),Primary_Values.value(n));
             }
-            qDebug()<<currImage.value("File").toString();
             QFileInfo orgImage = QFileInfo(currImage.value("File").toString());
             QFile::copy(orgImage.absoluteFilePath(),QString(workDir+QDir::separator()+orgImage.fileName()));
             currImage.setValue("File",orgImage.fileName());
-            qDebug()<<currImage.value("File").toString();
             QString addQuery=QueryGen.InsertStat(TableName,currImage);
-            qDebug()<<addQuery;
             //query.exec(addQuery);
         } else if (currImage.value("Status").toString()=="R"){
-            QString delStat = QueryGen.DeleteStat(TableName);
-            QString whereStat= QueryGen.WhereStat(currImage);
+            //QString delStat = QueryGen.DeleteStat(TableName);
+            /*QString whereStat= QueryGen.WhereStat(currImage);
             delStat.append(" ");
             delStat.append(whereStat);
-            query.exec(delStat);
+            query.exec(delStat);*/
             QString Filepath=GetDirectory(Primary_Values);
             Filepath.append(currImage.value("File").toString());
             QDir remDir = QDir(Filepath);
@@ -531,3 +898,4 @@ bool MySqlTableModel::insertImages(QString TableName, QSqlRecord Primary_Values,
 
 
 Q_DECLARE_METATYPE(QVector<QSqlRecord>);
+

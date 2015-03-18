@@ -36,9 +36,10 @@ ModifyDialog::ModifyDialog(QWidget *parent, MySqlTableModel *DBModel,int index) 
     construct(parent,DBModel);
 
     if (index <0){
-        DBModel->insertRow(index,QModelIndex());
-        QModelIndex currIndex=DBModel->index(DBModel->rowCount(QModelIndex())-1,0);
-        mapper->setCurrentModelIndex(currIndex);
+        //DBModel->insertRow(0,QModelIndex());
+        //QModelIndex currIndex=DBModel->index(DBModel->rowCount(QModelIndex())-1,0);
+        //mapper->setCurrentModelIndex(currIndex);
+        mapper->toLast();
     }else{
         QModelIndex currIndex=DBModel->index(index,0);
         mapper->setCurrentModelIndex(currIndex);
@@ -71,7 +72,6 @@ void ModifyDialog::construct(QWidget *parent, MySqlTableModel *DBModel){
 
     //The fields are read one by one and added in the correct position along the DispFields array
     for (int i=0;i<Fields.size();i++){
-
         DispFields.append(new DisplayWidget(Fields[i].getName(),Fields[i].getType(),true));
         mapper->addMapping(DispFields.last(),i,"Value");
     }
@@ -93,11 +93,11 @@ void ModifyDialog::construct(QWidget *parent, MySqlTableModel *DBModel){
     while (pos<DispFields.size()){
         if(pos<DispFields.size()-1){
             QHBoxLayout *temp_hLayout = new QHBoxLayout;
-            if (Fields[pos].getType()=="TEXT" && Fields[pos+1].getType()=="TEXT"){
+            if (Fields[pos].getType()==DataType::Text && Fields[pos+1].getType()==DataType::Text){
                 temp_hLayout->addWidget(DispFields[pos]);
                 temp_hLayout->addWidget(DispFields[pos+1]);
                 mainLayout->addLayout(temp_hLayout);
-            }else if(Fields[pos].getType()=="TEXT"){
+            }else if(Fields[pos].getType()==DataType::Text){
                 temp_hLayout->addWidget(DispFields[pos]);
                 temp_hLayout->addStretch((this->width()/2));
                 mainLayout->addLayout(temp_hLayout);
@@ -118,7 +118,7 @@ void ModifyDialog::construct(QWidget *parent, MySqlTableModel *DBModel){
     //The Button layout is created with two buttons
     QHBoxLayout *btnLayout= new QHBoxLayout;
     //btnLayout->setDirection(QBoxLayout::RightToLeft);
-    QPushButton *btnAccept= new QPushButton("Add Record",this);
+    QPushButton *btnAccept= new QPushButton("Accept",this);
     QPushButton *btnReject=new QPushButton("Cancel",this);
     btnLayout->addWidget(btnAccept);
     btnLayout->addWidget(btnReject);
@@ -150,6 +150,7 @@ QVector<DisplayWidget *> ModifyDialog::getValues(){
 }
 
 void ModifyDialog::AcceptDialog(){
+
     mapper->submit();
     BaseModel->submitAll();
     accept();

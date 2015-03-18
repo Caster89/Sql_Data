@@ -1,0 +1,20 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="Add_Round_Btn.png">Images/Add_Round_Btn.png</file>
+        <file alias="Rmv_Round_Btn.png">Images/Rmv_Round_Btn.png</file>
+        <file alias="Cpt_Bottom">Images/Caption_Bottom.png</file>
+        <file alias="Cpt_Left">Images/Caption_Left.png</file>
+        <file alias="Cpt_Right">Images/Caption_Right.png</file>
+        <file alias="Cpt_Top">Images/Caption_Top.png</file>
+    </qresource>
+    <qresource prefix="/Fonts">
+        <file alias="CMR_Bold.otf">Fonts/ComputerModernRoman-Bold.otf</file>
+        <file alias="CMR_Bold.ttf">Fonts/ComputerModernRoman-Bold.ttf</file>
+        <file alias="CMR_BoldItalic.otf">Fonts/ComputerModernRoman-BoldItalic.otf</file>
+        <file alias="CMR_BoldItalic.ttf">Fonts/ComputerModernRoman-BoldItalic.ttf</file>
+        <file alias="CMR_Italic.otf">Fonts/ComputerModernRoman-Italic.otf</file>
+        <file alias="CMR_Italic.ttf">Fonts/ComputerModernRoman-Italic.ttf</file>
+        <file alias="CMR_Regular.otf">Fonts/ComputerModernRoman.otf</file>
+        <file alias="CMR_Regular.ttf">Fonts/ComputerModernRoman.ttf</file>
+    </qresource>
+</RCC>

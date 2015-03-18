@@ -1,4 +1,5 @@
 #include "myfield.h"
+#include <mysqltablemodel.h>
 #include <QString>
 
 
@@ -6,7 +7,7 @@ MyField::MyField(){
 
 }
 
-MyField::MyField(QString Name, QString Table, QString Type, bool Vis_Preview, bool Vis_Table, int Position, bool Primary)
+MyField::MyField(QString Name, QString Table, DataType::dataType Type, bool Vis_Preview, bool Vis_Table, int Position, bool Primary)
 {
     Field_Name=Name;
     Field_Table=Table;

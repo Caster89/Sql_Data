@@ -35,6 +35,9 @@
 #include <displaywidget.h>
 #include <mysqltablemodel.h>
 #include "myfield.h"
+#include <QFontDatabase>
+#include <QFont>
+#include "printsetup.h"
 
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -44,6 +47,14 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->setupUi(this);
     qDebug()<<"Begin Program\n";
+
+    QFontDatabase fontDB;
+    /*fontDB.addApplicationFont(":/Fonts/CMR_Regular.ttf");
+    fontDB.addApplicationFont(":/Fonts/CMR_Bold.ttf");
+    fontDB.addApplicationFont(":/Fonts/CMR_Italic.ttf");
+    fontDB.addApplicationFont(":/Fonts/CMR_BoldItalic.ttf");*/
+
+
 
     //Create the central widget where the other frames will be inserted
     QWidget *wdgMain = new QWidget(this);
@@ -62,14 +73,20 @@ MainWindow::MainWindow(QWidget *parent) :
     frmButtons->setFrameStyle(QFrame::Box | QFrame::Raised);
     frmButtons->setLineWidth(1);
 
-    QPushButton *btnAddRecord = new QPushButton("Add Record",frmButtons);
+    QPushButton *btnAddRecord = new QPushButton("AddRecord",frmButtons);
+    QFont btnFont=btnAddRecord->font();
+    btnFont.setFamily("Computer Modern Roman");
+    btnFont.setWeight(QFont::Bold);
+    btnAddRecord->setFont(btnFont);
     QPushButton *btnRemoveRecord = new QPushButton("Remove Record",frmButtons);
     QPushButton *btnModifyRecord = new QPushButton("Modify Record",frmButtons);
+    QPushButton *btnPrint = new QPushButton("PRINT",frmButtons);
 
     QHBoxLayout *btnLayout = new QHBoxLayout;
     btnLayout->addWidget(btnAddRecord);
     btnLayout->addWidget(btnRemoveRecord);
     btnLayout->addWidget(btnModifyRecord);
+    btnLayout->addWidget(btnPrint);
     frmButtons->setLayout(btnLayout);
 
     //The frame for the preview is created
@@ -124,6 +141,9 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(dbTableView,SIGNAL(doubleClicked(QModelIndex)),SLOT(recordDoubleClicked(const QModelIndex)));
 
     connect(btnAddRecord,SIGNAL(clicked()),SLOT(createNewRecord()));
+    connect(btnRemoveRecord,SIGNAL(clicked()),SLOT(deleteRecord()));
+    connect(btnModifyRecord,SIGNAL(clicked()),SLOT(updateRecord()));
+    connect(btnPrint,SIGNAL(clicked()),this,SLOT(printRecord()));
 
 
 
@@ -137,6 +157,16 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+void MainWindow::printRecord(){
+    PrintSetup *printWidget=new PrintSetup(dbmodel->getFields());
+    QWidget *compWidget= new QWidget();
+    QHBoxLayout *test =new QHBoxLayout();
+    compWidget->setLayout(test);
+    test->addWidget(printWidget);
+    compWidget->show();
+
+}
+
 bool MainWindow::CreateConnection(QString dbDir){
     //The sql database is created, and defined as SQLite
     qDebug()<<"Connection initiated";
@@ -144,6 +174,7 @@ bool MainWindow::CreateConnection(QString dbDir){
 
     //db.setDatabaseName(QString("%1/%1").arg(dbDir));
     db.setDatabaseName("/movies/movies");
+    qDebug()<<db.databaseName();
 
     if (!db.open()){
         qDebug()<<"No Connection made to file";
@@ -171,7 +202,6 @@ bool MainWindow::CreateConnection(QString dbDir){
         //Each field is checked to see whether it should appear in the preview frame.
         //If so a label is created and added to the prwFields, ad a blank one is added to prwValues.
         if (dbmodel->getField(n).getVisPreview()){
-
             prwItems.push_back(new DisplayWidget(dbmodel->getField(n).getName(),dbmodel->getField(n).getType(),false));
             mapper->addMapping(prwItems.last(),n,"Value");
         }
@@ -220,9 +250,10 @@ QVector<QVector<QString> > MainWindow::getFields(){
 void MainWindow::createNewRecord(){
     //This slot is linked to the AddRecord QPushButton signal
     //The ModfyDialog is created, passing in the parent and the name of the fields
-    ModifyDialog querygen(this,dbmodel,-1);
+    dbmodel->insertRows(dbmodel->rowCount(),1,QModelIndex());
+    ModifyDialog modDialog(this,dbmodel,dbmodel->rowCount()-1);
     //If the query is accepted
-    querygen.exec();
+    modDialog.exec();
 //    if(querygen.exec()==QDialog::Accepted){
 //        //The inserted values are retreived
 //        QVector<DisplayWidget*>vecValues=querygen.getValues();
@@ -341,4 +372,17 @@ void MainWindow::createNewRecord(){
 //    }
 //    }
 
+}
+
+bool MainWindow::deleteRecord(){
+    qDebug()<<"deleting Record in position: "<<dbTableView->currentIndex().row();
+    int row = dbTableView->currentIndex().row();
+    dbmodel->removeRows(row,1);
+    return true;
+}
+
+bool MainWindow::updateRecord(){
+    //This slot is linked to the AddRecord QPushButton signal
+    ModifyDialog modDialog(this,dbmodel,dbTableView->currentIndex().row());
+    modDialog.exec();
 }
