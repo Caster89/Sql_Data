@@ -24,27 +24,33 @@
 #include <QApplication>
 #include <QPushButton>
 
-ImageItemDelegate::ImageItemDelegate(QWidget *parent)
+ImageItemDelegate::ImageItemDelegate(MediaListWidget *parent)
     : QStyledItemDelegate(parent)
 {
     origParent=parent;
+    imageSize = origParent->getItemSize();
+    imageScale = origParent->getItemScale();
+    connect(origParent, SIGNAL(imageScaleChanged()), this, SLOT(imageScaleChanged()));
+
 }
 
 void ImageItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
     //The painter status is saved befor painting in order to restore it at the end of the method
+
     if(index.data(Qt::UserRole).canConvert<QSqlRecord>()){
+        //imageSize = origParent->getItemSize();
         QSqlRecord currValue=qvariant_cast<QSqlRecord>(index.data(Qt::UserRole));
         painter->save();
 
         //the option parameter is set to the correct version
-        QSize avlbSpace=origParent->size();
+        //QSize avlbSpace=origParent->size();
 
         //The canvas rectangle is taken fromt the option parameter and it's width and height are saved
         //QRect avlRect = QRect();
         //QPoint topLeft = avlRect.topLeft();
-        int width=avlbSpace.width()/3;
-        int height = avlbSpace.height();
+        //int width=avlbSpace.width()/3;
+        //int height = avlbSpace.height();
 
         //the option parameter is set to the correct version
         QStyleOptionViewItemV4 editedOpt = option;
@@ -62,18 +68,25 @@ void ImageItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
     //The image is prepared for painting. It is first casted as a QIcon, and then converted to QPixmap. Finally
     //it is scaled keeping the aspect ration to either the full width or 70% of the height
     //Margins are then calculated using the available width and the image's width
-        QString fileDir=currValue.value("Directory").toString();
-        fileDir.append(currValue.value("File").toString());
-        QIcon icnImage(fileDir);
-        QPixmap Image = icnImage.pixmap(200);
+        //QString fileDir=currValue.value("Directory").toString();
+        //qDebug()<<"The directory is: "<<fileDir;
+        //fileDir.append(currValue.value("File").toString());
+        //qDebug()<<"The file is: "<<fileDir;
+        //QIcon icnImage(fileDir);
+        QPixmap Image = qvariant_cast<QPixmap>(index.data(Qt::DecorationRole));
+        //icnImage.pixmap(200);
 
     //Image=Image.scaled(width,0.7*height,Qt::KeepAspectRatio);
 
-        Image=Image.scaledToHeight(0.7*height);
-
+        //int width=imageSize;
+        //int height = avlbSpace.height();
+        //Image=Image.scaledToHeight(0.7*height);
+        QPixmap scaledImage  = Image.scaled(imageSize*imageScale, imageSize*imageScale, Qt::KeepAspectRatio);
+        int width=scaledImage.width()+2*margin;
+        int height = 1.5*scaledImage.height()+4;
         //int margin = (width-Image.width())/2;
-        QPoint imgTopLeft = QPoint(topLeft.x()+margin,topLeft.y()+2);
-        QPoint txtTopLeft = QPoint(topLeft.x()+1,topLeft.y()+Image.height());
+        QPoint imgTopLeft = QPoint(topLeft.x()+margin+(imageSize-scaledImage.width())/2,topLeft.y()+2);
+        QPoint txtTopLeft = QPoint(topLeft.x()+1,topLeft.y()+scaledImage.height());
 
         //A QFontMetrics item is initalized in order to determin how the text is going to be split when drawn
         //the number of lines are calculated using the total width of the text and the total width of the window
@@ -119,7 +132,7 @@ void ImageItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
             painter->drawText(QRect(txtTopLeft,QPoint(txtTopLeft.x()-2+width,height)), Qt::TextWordWrap,fm.elidedText(writeText,Qt::ElideRight,usedWidth));
             //The image is drawn with the top-right corner 2pt from the top and "margin" points from the left.
             //painter->drawPixmap(width*index.row()+margin,2,Image);
-            painter->drawPixmap(imgTopLeft,Image);
+            painter->drawPixmap(imgTopLeft,scaledImage);
 
         } else {
             //If the item is not selected we want to draw less text lines, because of this we choos the minor
@@ -141,9 +154,9 @@ void ImageItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
         painter->drawText(QRect(txtTopLeft,QPoint(txtTopLeft.x()-4+width,height)), Qt::TextWordWrap,fm.elidedText(writeText,Qt::ElideRight,usedWidth));
         //The image is drawn with the top-right corner 2pt from the top and "margin" points from the left.
         //painter->drawPixmap(width*index.row()+margin,2,Image);
-        painter->drawPixmap(imgTopLeft,Image);
+        painter->drawPixmap(imgTopLeft,scaledImage);
         }
-        if(option.state & QStyle::State_MouseOver ){
+        if(option.state & QStyle::State_MouseOver && origParent->isEditable()){
              //&& option.state & QStyle::State_Selected
             //*******************************************************************//
             //Create the remove button image by creating a cirlce. The placement //
@@ -156,7 +169,7 @@ void ImageItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
             QPoint topL=posDelete(option);
             QPushButton *btnDelete = new QPushButton();
 
-            QRect drawRec(topL,QSize(30,30));
+            QRect drawRec(topL,QSize(25,25));
             //QPainterPath circlePath;
             //QPainterPath minusSign;
             QIcon rmvIcn(":/Rmv_Round_Btn");
@@ -184,6 +197,7 @@ void ImageItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
     }
 
 }
+
 QPoint ImageItemDelegate::posDelete(const QStyleOptionViewItem &option) const{
     return QPoint(option.rect.right() - 30 - margin,
                           option.rect.top() +margin);
@@ -201,17 +215,19 @@ bool ImageItemDelegate::editorEvent(QEvent *event, QAbstractItemModel *model, co
     // Emit a signal when the icon is clicked
 
     if(!index.parent().isValid() && event->type()==QEvent::MouseMove){
-        if(index.data(Qt::UserRole).canConvert<QSqlRecord>()){
-            QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
-            if(closeButtonRect.contains(mouseEvent->pos())){
-                QApplication::setOverrideCursor(Qt::PointingHandCursor);
-            }else{
 
-                QApplication::restoreOverrideCursor();
+            if(index.data(Qt::UserRole).canConvert<QSqlRecord>()&&origParent->isEditable()){
+                QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+                if(closeButtonRect.contains(mouseEvent->pos())){
+                    QApplication::setOverrideCursor(Qt::PointingHandCursor);
+                }else{
+
+                    QApplication::restoreOverrideCursor();
+
+                }
+            QApplication::processEvents();
 
             }
-            QApplication::processEvents();
-    }
     }
 
 
@@ -220,55 +236,63 @@ bool ImageItemDelegate::editorEvent(QEvent *event, QAbstractItemModel *model, co
         QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
 
 
+            if(closeButtonRect.contains(mouseEvent->pos()) && origParent->isEditable())
+            {
+                if(index.data(Qt::UserRole).canConvert<QSqlRecord>()){
+                    ImageWidgetDelegate *editor=new ImageWidgetDelegate(0,index,option);
+                    editor->setStatus("R");
+                    updateObject(editor);
+                    return true;
 
-        if(closeButtonRect.contains(mouseEvent->pos()))
-        {
-
-            if(index.data(Qt::UserRole).canConvert<QSqlRecord>()){
-                ImageWidgetDelegate *editor=new ImageWidgetDelegate(0,index,option);
-                editor->setStatus("R");
-                updateObject(editor);
-                return true;
-
+                }
             }
             return QStyledItemDelegate::editorEvent(event,model,option,index);
-        }
+
         //return QStyledItemDelegate::editorEvent(event,model,option,index);
 
     }
     if(event->type()==QEvent::MouseButtonDblClick){
-        ImageWidgetDelegate *editor=new ImageWidgetDelegate(0,index,option);
-        connect(editor,SIGNAL(editingFinished(ImageWidgetDelegate*)),this,SLOT(updateObject(ImageWidgetDelegate*)));
-        //connect(editor,SIGNAL(editingFinished()),this,SLOT(updateObject(editor)));
-        editor->setWindowModality(Qt::WindowModal);
-        editor->exec();
-        return true;
+            ImageWidgetDelegate *editor=new ImageWidgetDelegate(0,index,option, !origParent->isEditable());
+            connect(editor,SIGNAL(editingFinished(ImageWidgetDelegate*)),this,SLOT(updateObject(ImageWidgetDelegate*)));
+            //connect(editor,SIGNAL(editingFinished()),this,SLOT(updateObject(editor)));
+            editor->setWindowModality(Qt::WindowModal);
+            editor->exec();
+            return true;
     }
+    //if(event->type()==QEvent::MouseButtonPress){
+        //return true;
+    //}
+
     return QStyledItemDelegate::editorEvent(event,model,option,index);
 }
 
 //SizeHint is called to determin the size of the item and returns a QSize varaible
 QSize  ImageItemDelegate::sizeHint(const QStyleOptionViewItem &option,const QModelIndex &index) const
 {
-
     //the option parameter is set to the correct version
     if(index.data(Qt::UserRole).canConvert<QSqlRecord>()){
-        QSize avlbSpace=origParent->size();
+        //QSize avlbSpace=origParent->size();
 
-        QSqlRecord currValue=qvariant_cast<QSqlRecord>(index.data(Qt::UserRole));
-        QString fileDir=currValue.value("Directory").toString();
-        fileDir.append(currValue.value("File").toString());
-        QIcon icnImage(fileDir);
-        QPixmap Image = icnImage.pixmap(200);
-
+        //QSqlRecord currValue=qvariant_cast<QSqlRecord>(index.data(Qt::UserRole));
+        //QString fileDir=currValue.value("Directory").toString();
+        //fileDir.append(currValue.value("File").toString());
+        //QIcon icnImage(fileDir);
+        //QPixmap Image = icnImage.pixmap(200);
+        //QPixmap Image = qvariant_cast<QPixmap>(index.data(Qt::DecorationRole));
         //The canvas rectangle is taken fromt the option parameter and it's width and height are saved
         //QRect avlRect = QRect();
         //QPoint topLeft = avlRect.topLeft();
-        int height = avlbSpace.height();
-        Image=Image.scaledToHeight(height*0.7);
-        int width=Image.width();
-
-        return QSize(width+2*margin,height);
+        //int height = avlbSpace.height();
+        //Image=Image.scaledToHeight(height*0.7);
+        //int width=Image.width();
+        QPixmap Image = qvariant_cast<QPixmap>(index.data(Qt::DecorationRole));
+        QPixmap scaledImage  = Image.scaled(imageSize*imageScale, imageSize*imageScale, Qt::KeepAspectRatio);
+        int width=scaledImage.width()+2*margin;
+        int height = 1.5*scaledImage.height()+4;
+        QSize preferredSize = QSize(width, height);
+        return preferredSize;
+                //QSize(imageScale*imageSize+2*margin,imageScale*imageSize*3/2+2);
+        //return QSize(width+2*margin,height);
     }else{
         return QStyledItemDelegate::sizeHint(option,index);
     }
@@ -307,7 +331,6 @@ void ImageItemDelegate::setEditorData(QWidget *editor, const QModelIndex &index)
 //This method is called to get the data from the editor and update it in the index
 void ImageItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,const QModelIndex &index) const
 {
-    qDebug()<<"setting Model Data";
     //QString value=static_cast<ImageWidgetDelegate*>(editor)->getText();
     QSqlRecord values=dynamic_cast<ImageWidgetDelegate*>(editor)->getValue();
     //values.setValue("Description",value);
@@ -320,5 +343,9 @@ void ImageItemDelegate::updateEditorGeometry(QWidget *editor, const QStyleOption
     static_cast<ImageWidgetDelegate*>(editor)->setGeometry(option.rect);
 }
 
+void ImageItemDelegate::imageScaleChanged(){
+    imageScale = origParent->getItemScale();
+}
 
-Q_DECLARE_METATYPE(QSqlRecord);
+
+//Q_DECLARE_METATYPE(QSqlRecord);

@@ -1,9 +1,11 @@
+#pragma once
 #ifndef MYSTACKEDWIDGET_H
 #define MYSTACKEDWIDGET_H
 
 #include <QList>
 #include <QWidget>
 #include <QVBoxLayout>
+//#include "metatypedeclaration.h"
 
 class MyStackedWidget : public QWidget
     {

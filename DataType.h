@@ -1,3 +1,4 @@
+#pragma once
 #ifndef DATATYPE_H
 #define DATATYPE_H
 namespace DataType{
@@ -7,6 +8,7 @@ enum dataType{
         LongText,
         Image,
         Images,
+        Static,
         Other,
     };
 }

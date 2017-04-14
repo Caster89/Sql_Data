@@ -1,3 +1,4 @@
+#pragma once
 #ifndef DISPLAYWIDGET_H
 #define DISPLAYWIDGET_H
 
@@ -14,72 +15,43 @@
 #include <QDebug>
 #include <mysqltablemodel.h>
 #include <datatype.h>
+#include "displaywidgettext.h"
+#include <myfield.h>
+//#include "metatypedeclaration.h"
 
-class DisplayWidget : public QStackedWidget
+class DisplayWidget : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QVariant Value READ getValue WRITE setValue)
 public:
-    DisplayWidget(QString newFieldName, DataType::dataType FieldType, QVariant Value, bool Edit=0, QWidget *parent = 0);
-    DisplayWidget(QString newFieldName, DataType::dataType FieldType, bool Edit=0, QWidget *parent = 0);
+    DisplayWidget(MyField newField, bool Edit=0, QWidget *parent = 0);
 
+    inline void setValue(QVariant newValue){
+        displayWidgetPointer->setValue(newValue);
+    }
 
     inline QVariant getValue(){
-        return m_Value;
+        return displayWidgetPointer->getValue();
     }
 
-
-
-    void setImages();
-
-    //void removeImages();
-    void changeImage();
-    void removeImage();
-    void reload();
-    void construct();
-    inline void setValue(QVariant newValue){
-        m_Value=newValue;
-        reload();
+    inline QSizePolicy sizePolicy(){
+        return displayWidgetPointer->sizePolicy();
     }
 
-signals:
-
-public slots:
-    void ValueChange();
-    void addImages();
-    void removeImages();
-
+    inline QSize sizeHint() const{
+        //qDebug()<<"Display widget recommends a size of: "<< displayWidgetPointer->sizeHint();
+        return displayWidgetPointer->sizeHint();
+    }
 
 private:
-    QWidget *Editable=new QWidget;
-    QWidget *NEditable= new QWidget;
-    bool isEdit;
-    QVariant m_Value;
-    //QString Type;
-    DataType::dataType Type;
-    QString Field;
-    QLabel *EFieldName;
-    QLabel *NFieldName;
-    QTextEdit *LongText;
-    QLineEdit *ShortText;
-    QLabel *TextDisplay;
-    MediaListWidget *ImagesDisplay;
-    MediaListWidget *ImagesEdit;
-    QPushButton *AddImages;
-    QPushButton *RemoveImages;
-    QLabel *ImageDisplay;
-    QLabel *ImageEdit;
-    QPushButton* ChangeImage;
-    QPushButton* RemoveImage;
-    QBoxLayout *EditLayout=new QBoxLayout(QBoxLayout::TopToBottom);
-    QBoxLayout *NEditLayout=new QBoxLayout(QBoxLayout::TopToBottom);
-    void updateValue();
-private slots:
-    void imagesChanged();
+    DisplayWidgetBase *displayWidgetPointer;
+
+
 
 
 };
-Q_DECLARE_METATYPE(QSqlRecord);
-
+//Q_DECLARE_METATYPE(QSqlRecord);
+//Q_DECLARE_METATYPE(QVector<QVector<QString> >);
+//Q_DECLARE_METATYPE(QVector<QSqlRecord>);
 #endif // DISPLAYWIDGET_H
 

@@ -1,3 +1,4 @@
+#pragma once
 #ifndef PRINTITEMIMAGE_H
 #define PRINTITEMIMAGE_H
 
@@ -13,11 +14,15 @@ class PrintItemImage : public PrintItemBase
 public:
     PrintItemImage();
     PrintItemImage(MyField field);
-    void paint(QPainter *p){}
+    void paintItem(QTextDocument *doc, QTextCursor *cursor, QSqlRecord *record);
 
     ~PrintItemImage(){}
 
 private:
+
+    QFont captionFont;
+    QFont prefixFont;
+    int imageAlignment;
 
     QGroupBox *captionBox=new QGroupBox(valueBox);
 
@@ -49,16 +54,15 @@ private:
 
 
 
-    QComboBox *imageSize;
+    //QComboBox *imageSize;
 
-    QToolButton *captionBold;
-    QToolButton *captionUnderlined;
-    QToolButton *captionItalics;
+    QToolButton *captionBold =new  QToolButton();
+    QToolButton *captionUnderlined=new QToolButton();
+    QToolButton *captionItalics=new QToolButton();
 
     void buildWidget();
 
     //
-    QFont captionFont;
     bool valueNewLine=true;
 
     int captionPosition;

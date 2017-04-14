@@ -1,3 +1,4 @@
+#pragma once
 #ifndef LABELEDTEXT_H
 #define LABELEDTEXT_H
 
@@ -11,6 +12,8 @@
 #include <QBoxLayout>
 #include <QPushButton>
 #include <datatype.h>
+#include "medialistwidget.h"
+//#include "metatypedeclaration.h"
 
 class LabeledText : public QWidget
 {
@@ -49,7 +52,7 @@ private:
     QLabel *lblImage;
     QTextEdit *txtEdit;
     QLineEdit *lnEdit;
-    QListWidget *imgEdit;
+    MediaListWidget *imgEdit;
     DataType::dataType txtType;
     QVector<QVector<QVector<QString> > > Images;
     QString Field_name;

@@ -1,3 +1,4 @@
+#pragma once
 #ifndef PREVIEWPOPUP_H
 #define PREVIEWPOPUP_H
 
@@ -8,6 +9,7 @@
 #include <QLabel>
 #include <QSize>
 #include <QSqlRecord>
+//#include "metatypedeclaration.h"
 
 class PreviewPopup  : public QWidget
 {

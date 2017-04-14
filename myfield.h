@@ -1,7 +1,10 @@
+#pragma once
 #ifndef MYFIELD_H
 #define MYFIELD_H
 #include <datatype.h>
 #include <QString>
+//#include <QVector>
+#include <QVariant>
 
 class MyField
 {
@@ -13,7 +16,23 @@ public:
 
     MyField(const MyField &orgField);
 
+    MyField &operator=(MyField &orgField);
+
     MyField &operator=(const MyField &orgField);
+
+
+    friend void swap(MyField& first,MyField& second){
+        using std::swap;
+        swap(first.Field_Name,second.Field_Name);
+        swap(first.Field_Pos,second.Field_Pos);
+        swap(first.Field_Primary,second.Field_Primary);
+        swap(first.Field_Table,second.Field_Table);
+        swap(first.Field_Type,second.Field_Type);
+        swap(first.Field_Vis_Preview,second.Field_Vis_Preview);
+        swap(first.Field_Table,second.Field_Table);
+    }
+
+
 
 
 
@@ -53,6 +72,8 @@ private:
 
 
 };
+Q_DECLARE_METATYPE(QVector<MyField>);
+Q_DECLARE_METATYPE(MyField);
 
 #endif // MYFIELD_H
 

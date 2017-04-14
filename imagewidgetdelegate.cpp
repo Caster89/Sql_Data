@@ -23,9 +23,11 @@
 #include <QColor>
 #include <QMessageBox>
 #include <QVariant>
+#include <QGuiApplication>
+#include <QScreen>
 
 
-ImageWidgetDelegate::ImageWidgetDelegate(QWidget *parent, const QModelIndex & index, const QStyleOptionViewItem &option)
+ImageWidgetDelegate::ImageWidgetDelegate(QWidget *parent, const QModelIndex & index, const QStyleOptionViewItem &option, bool readOnly)
     :QDialog(parent)
     ,txtLabelEdit(new QTextEdit(this))
     ,lblImage(new QLabel(this))
@@ -52,13 +54,18 @@ ImageWidgetDelegate::ImageWidgetDelegate(QWidget *parent, const QModelIndex & in
     //txtLabelEdit->setText(index.data().toString());
     //The image is extracted from the index data, first casted to QIcon, then converted to pixmap and set in
     //the QLabel (step not necessary, widget could only cover the text probably)
+    //QIcon icnImage=QIcon(currRecord.value("Directory").toString()+currRecord.value("File").toString());
+    QPixmap icnImage = qvariant_cast<QPixmap>(index.data(Qt::DecorationRole));;
+    QScreen *screen = QGuiApplication::primaryScreen();
+    QRect  screenGeometry = screen->geometry();
+    int scrnHeight = screenGeometry.height();
+    int scrnWidth = screenGeometry.width();
+    icnImage = icnImage.scaled(qMin(icnImage.width(),scrnWidth*2/3),qMin(icnImage.height(),scrnHeight*2/3), Qt::KeepAspectRatio);
+    lblImage->setPixmap(icnImage);
 
-    QIcon icnImage=QIcon(currRecord.value("Directory").toString()+currRecord.value("File").toString());
-
-
-    lblImage->setPixmap(icnImage.pixmap(width));
     //the QLabel is added to the layout and subsequentelly the QTextEdit
     txtLabelEdit->setText(currRecord.value("Description").toString());
+    txtLabelEdit->setReadOnly(readOnly);
     strStatus=currRecord.value("Status").toString();
     imageLayout->addWidget(lblImage);
     mainLayout->addLayout(imageLayout);
@@ -113,4 +120,4 @@ QString ImageWidgetDelegate::getStatus()
 }
 
 
-Q_DECLARE_METATYPE(QSqlRecord);
+//Q_DECLARE_METATYPE(QSqlRecord);

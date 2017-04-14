@@ -80,7 +80,7 @@ LabeledText::LabeledText(QWidget *parent,DataType::dataType text_type,QString la
     }
         break;
     case DataType::Images:{
-        imgEdit =new QListWidget(this);
+        imgEdit =new MediaListWidget(this);
         imgEdit->setViewMode(QListView::IconMode);
         imgEdit->setIconSize(QSize(200,200));
         imgEdit->setWrapping(false);

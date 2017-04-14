@@ -6,6 +6,13 @@
         <file alias="Cpt_Left">Images/Caption_Left.png</file>
         <file alias="Cpt_Right">Images/Caption_Right.png</file>
         <file alias="Cpt_Top">Images/Caption_Top.png</file>
+        <file alias="Align_Center">Images/Align_Center.png</file>
+        <file alias="Align_Justify">Images/Align_Justify.png</file>
+        <file alias="Align_Left">Images/Align_Left.png</file>
+        <file alias="Align_Right">Images/Align_Right.png</file>
+        <file alias="Photo_Not_Avlb">Images/Photo_Not_Available.png</file>
+        <file alias="Zoom_in.png">Images/Zoom_in.png</file>
+        <file alias="Zoom_out.png">Images/Zoom_out.png</file>
     </qresource>
     <qresource prefix="/Fonts">
         <file alias="CMR_Bold.otf">Fonts/ComputerModernRoman-Bold.otf</file>

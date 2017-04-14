@@ -1,3 +1,4 @@
+#pragma once
 #ifndef PRINTITEMLONGTEXT_H
 #define PRINTITEMLONGTEXT_H
 
@@ -8,6 +9,7 @@
 #include <QLabel>
 #include <QCheckBox>
 #include <QToolButton>
+#include <QButtonGroup>
 #include <QGroupBox>
 #include <printitembase.h>
 
@@ -18,7 +20,7 @@ public:
     PrintItemLongText();
     PrintItemLongText(MyField field);
 
-    void paint(QPainter *p){}
+    void paintItem(QTextDocument *doc, QTextCursor *cursor, QSqlRecord *record);
 
     ~PrintItemLongText(){}
 
@@ -36,12 +38,19 @@ private:
     QToolButton *valueUnderlined = new QToolButton(valueBox);
     QToolButton *valueItalics = new QToolButton(valueBox);
 
+    QToolButton *valueLeft = new QToolButton(valueBox);
+    QToolButton *valueCenter = new QToolButton(valueBox);
+    QToolButton *valueRight = new QToolButton(valueBox);
+    QToolButton *valueJustify = new QToolButton(valueBox);
+
+    QButtonGroup *alignGroup = new QButtonGroup();
 
 
     void buildWidget();
 
 private slots:
     void valueFontChanged();
+    void alignmentChanged(int align);
 
 };
 

@@ -1,0 +1,129 @@
+14-Apr-2017
+Major changes in how the printing is done for the different field type. Added a print preview, and the 
+qwidget holding the different elements is now a dragscroll area. Biggest change is the Images item
+whihc now prints tables within a table to place the idfferent images and their captions in the right
+position.
+TO DO:
+-Fix the print image widget
+-Add the possibility to print on the same line as the previous element
+-Implement the "drag to reorder" functionality ot dragscrollarea:
+    http://stackoverflow.com/questions/18299077/dragging-a-qwidget-in-qt-5
+    http://stackoverflow.com/questions/2244890/qt-qscrollarea-widget-clipping-contents
+    http://stackoverflow.com/questions/16468015/qscollarea-doesnt-autoscroll-when-dragging-inside-it/16470989#16470989
+-Add a comments field in the Fields table to store possible information on the fields (maybe also a description)
+-Add a multiple selection field
+-Add a dimensions field
+-add a combined field (one title, multiple fields, one separator) using the comments field
+
+
+5-Apr-2017
+Corrections were made to MySqlTableModel after the previous change. Inser, Update and Remove now seem to
+work properly. The only glitch is that when a row is removed and empty row remains in the QTableView.
+31-Mar-2017
+MySqlTableModel was drasically changed. Al the submit, insertRows, etc. were removed. The only methods which
+where changed were the _____RowInTable() methods. The problem of the table view not refereshing was due to
+the function not returning a boolean.
+The individial file field has to be changed so that instead or returning a qsqlrecord it returns a single
+string.
+22-Mar-2017
+The new display widgets classes were implemente. A variatino was made, the "handle class" is now a real widget
+ratehr than a simple container class for the pointer to the widgets. This was done to avoid re-implementing all
+the classes required of a widget (paint, getSize, etc.).
+The display layout of the modify dialog was also changed from a QVBoxLayout to which QHBoxLayout were added, to
+a QGridLayout with a better control over the widgets.
+14-Mar-2017
+When calling the data() function, in particular to determin the directory for a record, the function calls
+the function record(), which, given a row, returns a QSqlRecord. Record however use the function data() to
+fill the QSqlRecord, resulting in an infinite loop.
+Changed line 136 from:
+    imageRecord.setValue("Directory",QVariant::fromValue(GetDirectory(record(index.row()))));
+to:
+    imageRecord.setValue("Directory",QVariant::fromValue(GetDirectory(getPrimary(index.row()))));
+getDirectory has to be adjusted! It creates a directory with all the fileds!
+
+11-Mar-2017
+Rereading the whole project in order to get a grasp of how it worked. Started a Structure.txt file to explain the
+logical path behind the workings of the whole thing.
+Questions:
+-InsertRowIntoTable has the image fields passed as QSqlRecords with the directorya and filename separate. It might be
+easier to pass them as strings and if need be use a function to extrapolate the filename and directory when needed.
+-mysqltablemodel line 229:
+    rec.setValue(Fields[i].getName(),Fields[i].getName().append('.').append(fileInfo->suffix()));
+ after replacing the image field from QSqlRecord to a String it is setting the field value to the name of the field
+ plus the suffix. Should probably be:
+    rec.setValue(Fields[i].getName(),fileInfo->baseName().append('.').append(fileInfo->suffix()));
+ or even better
+    rec.setValue(Fields[i].getName(),fileInfo->fileName();
+ -mysqltablemodel line 254: Before inserting the values int he external tables the record is entered a second time
+ in the database, the external if loop should therefore be eliminated.
+ -mysqltablemodel: are primaryValues and getPrimary the same function?
+ -mysqltablemodel line 360: does a second check on the variation of the primary values, a double check should not be
+ needed
+ -mysqltablemodel: when adding a new file to a file field the Status is set to M, just as when a file is modified.
+ the removeFile() function is always used. Does the function check whether the file exists or not?
+ -mysqltablemodel: the single file field used three statuses:
+ 'O':old
+ 'R': remove
+ 'M': modify
+ the external field used three different ones:
+ 'N': new
+ 'R': remove
+ 'M': modify
+ This is necessary because external fields must insert in case of new, while internal ones do not.
+
+13-Aug-2015
+The derived class DisplayWidgetImage is finished, along with a modification to MySqlTableModel to make it compatible.
+The image file is saved in the main directory of the record under the format 'Field_Name.ext'. MySqlTableModel
+method data has been modified to return a QSqlRecord when queried for a field which stored a file. The SqlRecord
+has three fields:
+Directory
+FileName
+Satus
+These are read and stored in the DisplayWidgetImage which shows the image and allows it to be either changed or
+removed.
+The InsertRowinTable and UpdateRowinTable methods have also been changed to work with the new format. During the
+process fields are not only checked to separate the ones which do not fit in the Main_Table but also if they are
+of type image, in which case the value is stored in a separate record, and substituted with a QString which stores
+the name of the file (gain in the format Field_Name.ext). The separate record is then read field by field and the
+images are either removed, or copied.
+Field 1                 |Field 2
+Type:Image              |Type:Image
+SqlRecord:              |SqlRecord:
+    -Directory:_______  |    -Directory:_______
+    -FileName:_______   |    -FileName:_______
+    -Status:_           |    -Status:_
+
+Becomes:
+Field 1                 |Field 2
+Type:Image              |Type:Image
+QString:____            |QString:____
+
+ToDo:
+Insted of just checking against a sigle datatype (i.e. Image) it could be interesting to check against a list of
+datatypes which represent files (i.e. Image,Pdf,doc), but which do not need to be stored in a separate table.
+*************************************************
+7-Aug-2015
+Derived classed from the DisplayWidgetBase were created for the longText and image(still needs to be completed). The
+image class will need 2 buttons, one to change the image and one to remove it completely (enabled only once a value is
+set). Finally a class for the images will have to be created. Once all the subclasses are ready the DisplayWidget
+class will be repourposed as a handle class containing only the pointer oto the correct class as well as the setter and
+getter methods.
+*************************************************
+A similar approach to the printwidgets was used ot replace the display widgets used to insert and edit the data of
+the records. The handle class (which should be DisplayWidget) will handle interfacing the setting and getting of the
+value.
+*************************************************
+18-Mar-2015
+The interface with the database is working, with checks to make sure the edited/inserted value does not already exist.
+No error message is returned though in case of an error. This could be created by creating and enum and returning a
+possible error message or similar.
+The interface for printing is started. A base class was created (PrintItemBase) along with classes for text, longtext and image
+(images is still missing). These classes are widgets with a printItem() function. A handle class was also created (Print Item)
+which holds the pointer to the class in order to initialize the class and select which child class to use later.
+The printItem()function should take a *QSqlRecord as a variable and return a QTextBlock which can be inserted in a
+QTextDocument in the main window.
+
+**************************************************
+10-Oct-2014
+MySqlTableModel has been change in order to make better use of the already existing QSqlTableModel, from which it is
+subbclassed. Ideally the new class will be used exclusevelly when a record has to be retrieved from a foreign table

@@ -1,6 +1,8 @@
 #include "printitemimage.h"
 #include "printitembase.h"
 #include <QIcon>
+#include <QDebug>
+#include <QTextTable>
 
 /******************************************************************/
 //The PrintItemImage valueBox:
@@ -22,6 +24,11 @@
 
 PrintItemImage::PrintItemImage()
 {
+    cmbImageSize->addItem("Full Page");
+    cmbImageSize->addItem("Full Width");
+    cmbImageSize->addItem("Fixed Height");
+    cmbImageSize->addItem("Fixed Width");
+    cmbImageSize->addItem("Set Width and Height");
 
 }
 
@@ -29,11 +36,21 @@ PrintItemImage::PrintItemImage(MyField field)
     :PrintItemBase(field)
 {
     captionSize->addItems(fontSize);
+    //qDebug()<<"Before Connection";
+
+    cmbImageSize->addItem("Full Page");
+    cmbImageSize->addItem("Full Width");
+    cmbImageSize->addItem("Fixed Height");
+    cmbImageSize->addItem("Fixed Width");
+    cmbImageSize->addItem("Set Width and Height");
+
     buildWidget();
 
 }
 
 void PrintItemImage::buildWidget(){
+
+
     captionBox->setTitle("Caption Settings");
             
     //The Combobox for determening the position of the caption is populated
@@ -47,6 +64,30 @@ void PrintItemImage::buildWidget(){
     cmbCaptionPos->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     cmbCaptionPos->setSizeAdjustPolicy(QComboBox::AdjustToContents);
     cmbCaptionPos->setMinimumHeight(60);
+
+    QHBoxLayout *captionFontWeights = new QHBoxLayout();
+    QFont btnFont=captionBold->font();
+    captionBold->setText("B");
+    captionBold->setCheckable(true);
+    btnFont.setBold(true);
+    captionBold->setFont(btnFont);
+    btnFont.setBold(false);
+    captionUnderlined->setText("U");
+    captionUnderlined->setCheckable(true);
+    btnFont.setUnderline(true);
+    captionUnderlined->setFont(btnFont);
+    btnFont.setUnderline(false);
+
+    captionItalics->setText("I");
+    captionItalics->setCheckable(true);
+    btnFont.setItalic(true);
+    captionItalics->setFont(btnFont);
+    btnFont.setItalic(false);
+    captionFontWeights->addWidget(captionBold);
+    captionFontWeights->addWidget(captionItalics);
+    captionFontWeights->addWidget(captionUnderlined);
+    captionFontWeights->addStretch(0);
+
     
     QHBoxLayout *imageLayout =new QHBoxLayout();
     ledtImageHeight->setMaximumWidth(30);
@@ -77,100 +118,126 @@ void PrintItemImage::buildWidget(){
     captionLayout2->addStretch(0);
     captionLayout->addLayout(positionLayout);
     captionLayout->addLayout(captionLayout1);
+    captionLayout->addLayout(captionFontWeights);
     captionLayout->addLayout(captionLayout2);
     captionBox->setLayout(captionLayout);
 
     valueLayout->addWidget(NewLine);
     valueLayout->addLayout(imageLayout);
     valueLayout->addWidget(captionBox);
-    /*
-    
-    captionBox->setTitle("Caption");
-
-    //The main layout for the value GroupBox is created. It is a QGridLayout
-    QGridLayout valueLayout(valueBox);
-
-    //The layout for the GroupBox containing the widgets for setting the
-    //caption properties is created. It is a QGridLayout
-    QGridLayout captionLayout(captionBox);
-
-    QHBoxLayout captionStyleLayout(titleBox);
-
-    
-
-    //The buttons for determening the font style of the caption are created
-    //and placed in a specific layout
-    QFont btnFont=captionBold->font();
-    btnFont.setBold(true);
-    captionBold->setFont(btnFont);
-    btnFont.setBold(false);
-    btnFont.setUnderline(true);
-    captionUnderlined->setFont(btnFont);
-    btnFont.setUnderline(false);
-    btnFont.setItalic(true);
-    captionItalics->setFont(btnFont);
-    captionBold->setText("B");
-    captionBold->setCheckable(true);
-    captionItalics->setText("I");
-    captionItalics->setCheckable(true);
-    captionUnderlined->setText("U");
-    captionUnderlined->setCheckable(true);
-
-    captionStyleLayout.addWidget(captionBold);
-    captionStyleLayout.addWidget(captionUnderlined);
-    captionStyleLayout.addWidget(captionItalics);
-
-
-
-    //The whole layout is created by adding widgets and
-    //layouts
-
-    valueLayout.addWidget(NewLine,1,1);
-    valueLayout.addWidget(lblImageSize,2,1);
-    valueLayout.addWidget(imageSize,2,2);
-    valueLayout.addWidget(lblWidth,2,3);
-    valueLayout.addWidget(ledtImageWidth,2,4);
-    valueLayout.addWidget(lblHeight,2,5);
-    valueLayout.addWidget(ledtImageHeight,2,6);
-
-
-
-    //The caption layout contains the widgets to set the values for the
-    //caption font and position
-    captionLayout.addWidget(lblCaptionPos,1,1);
-    captionLayout.addWidget(cmbCaptionPos,1,2);
-    captionLayout.addWidget(lblCaptionFont,1,3);
-    captionLayout.addWidget(captionFontStyle,1,4);
-    captionLayout.addWidget(lblCaptionSize,1,5);
-    captionLayout.addWidget(captionSize,1,6);
-    captionLayout.addLayout(&captionStyleLayout,2,1,1,2);
-    captionLayout.addWidget(lblCaptionPre,2,3);
-    captionLayout.addWidget(ledtCaptionPre,2,4);
-    captionLayout.addWidget(capNumbered);
-
-    valueLayout.addLayout(&captionLayout,3,1,1,6);
-
-    valueBox->setLayout(&valueLayout);
 
     //CONNECTIONS
-    connect(NewLine,SIGNAL(stateChanged()),this,SLOT(imagePrintChanged()));
-    connect(imageSize,SIGNAL(currentIndexChanged()),this,SLOT(imagePrintChanged()));
+    connect(NewLine,SIGNAL(stateChanged(int)),this,SLOT(imagePrintChanged()));
+    connect(cmbImageSize,SIGNAL(currentIndexChanged(int)),this,SLOT(imagePrintChanged()));
+    connect(cmbCaptionPos,SIGNAL(currentIndexChanged(int)),this,SLOT(captionPrintChanged()));
     connect(ledtImageHeight,SIGNAL(editingFinished()),this,SLOT(imagePrintChanged()));
     connect(ledtImageWidth,SIGNAL(editingFinished()),this,SLOT(imagePrintChanged()));
-    connect(captionSize,SIGNAL(currentIndexChanged()),this,SLOT(captionPrintChanged()));
-    connect(captionFontStyle,SIGNAL(currentFontChanged()),this,SLOT(captionPrintChanged()));
-    connect(capNumbered,SIGNAL(stateChanged()),this,SLOT(captionPrintChanged()));
+    connect(captionSize,SIGNAL(currentIndexChanged(int)),this,SLOT(captionPrintChanged()));
+    connect(captionFontStyle,SIGNAL(currentFontChanged(int)),this,SLOT(captionPrintChanged()));
+    //connect(capNumbered,SIGNAL(stateChanged(int)),this,SLOT(captionPrintChanged()));
 
-*/
 
 }
 
 void PrintItemImage::captionPrintChanged(){
-
+    captionFont=captionFontStyle->currentFont();
+    captionFont.setPointSize(captionSize->currentText().toInt());
+    captionFont.setBold(captionBold->isChecked());
+    captionFont.setItalic(captionItalics->isChecked());
+    captionFont.setUnderline(captionUnderlined->isChecked());
+    captionPosition=cmbCaptionPos->currentIndex();
 
 }
 
 void PrintItemImage::imagePrintChanged(){
+    switch(cmbImageSize->currentIndex()){
+        case(0):
+        //FullPage
+        ledtImageHeight->setEnabled(false);
+        ledtImageWidth->setEnabled(false);
+        break;
+        case(1):
+        //FullWidth
+        ledtImageHeight->setEnabled(false);
+        ledtImageWidth->setEnabled(false);
+        break;
+        case(2):
+        //FixedHeight
+        ledtImageHeight->setEnabled(true);
+        ledtImageWidth->setEnabled(false);
+        break;
+        case(3):
+        //FixedWidth
+        ledtImageHeight->setEnabled(false);
+        ledtImageWidth->setEnabled(true);
+        break;
+        case(4):
+        //SetWidthHeight
+        ledtImageHeight->setEnabled(true);
+        ledtImageWidth->setEnabled(true);
+        break;
+    }
+
+
+
+
+}
+
+void PrintItemImage::paintItem(QTextDocument *doc, QTextCursor *cursor, QSqlRecord *record){
+    //QTextCursor cursor(doc);
+    QTextFrame *topFrame =cursor->currentFrame();
+    QTextFrameFormat frameFormat=topFrame->frameFormat();
+    QTextFrame *frame=cursor->insertFrame(frameFormat);
+
+    QString imageDir=record->value(field.getName()).toString();
+
+
+    //QTextFrame *topFrame = cursor.currentFrame();
+    QTextBlockFormat blockFormat = cursor->blockFormat();
+    blockFormat.setAlignment(alignment);
+    cursor->setBlockFormat(blockFormat);
+    if(titleVisible->isChecked()){
+        QTextCharFormat titleFormat;
+        titleFormat.setFont(titleFont);
+        cursor->insertText(QString("%1: ").arg(field.getName()),titleFormat);
+        if(valueNewLine){
+            cursor->insertBlock();
+        }
+    }
+
+    QTextTable *imageTable;
+    QTextTableFormat imageTableFormat;
+    imageTableFormat.setAlignment(Qt::AlignCenter);
+    QImage *Image=new QImage("/Users/Nick/Desktop/Unknown.jpeg");
+    cursor->insertBlock();
+    cursor->insertImage(*Image);
+    switch(captionPosition){
+    case(0):{
+        imageTable = cursor->insertTable(2, 1, imageTableFormat);
+        QTextFrameFormat imageFrameFormat = cursor->currentFrame()->frameFormat();
+        imageFrameFormat.setBorder(0);
+        QTextCursor tempCursor = imageTable->cellAt(0, 0).firstCursorPosition();
+        //cursor.insertImage(Image);
+        //cursor.insertImage(Image);
+
+        break;}
+    case(1):{
+        imageTable = cursor->insertTable(2, 1, imageTableFormat);
+         QTextCursor tempCursor = imageTable->cellAt(1, 0).firstCursorPosition();
+        //cursor.insertImage(Image);
+        break;}
+    case(2):{
+        imageTable = cursor->insertTable(1, 2, imageTableFormat);
+        QTextCursor tempCursor = imageTable->cellAt(0, 1).firstCursorPosition();
+        //cursor.insertImage(Image);
+        break;}
+    case(3):{
+        imageTable = cursor->insertTable(1, 2, imageTableFormat);
+        QTextCursor tempCursor = imageTable->cellAt(0, 0).firstCursorPosition();
+        //cursor.insertImage(Image);
+        break;}
+    }
+
 
 }
 

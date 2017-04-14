@@ -14,6 +14,7 @@
 #include <QTextEdit>
 #include <QGridLayout>
 #include <QVBoxLayout>
+#include <QGridLayout>
 #include <QHBoxLayout>
 #include <QSqlRecord>
 #include <QSqlField>
@@ -23,18 +24,19 @@
 #include <QDataWidgetMapper>
 #include <QStringList>
 #include <QScrollBar>
+#include <QtDebug>
 #include "myfield.h"
 
 
 
-//The first construvtor allowe a parent and a vector for the field, this is for the creation of new records
+//The first constructor allows a parent and a vector for the field, this is for the creation of new records
 ModifyDialog::ModifyDialog(QWidget *parent, MySqlTableModel *DBModel,int index) :
     QDialog(parent)
 {
+    qDebug()<<"Creating the mapper and gong to set the current index to:"<<index;
     mapper->setModel(DBModel);
     mapper->setSubmitPolicy(QDataWidgetMapper::ManualSubmit);
     construct(parent,DBModel);
-
     if (index <0){
         //DBModel->insertRow(0,QModelIndex());
         //QModelIndex currIndex=DBModel->index(DBModel->rowCount(QModelIndex())-1,0);
@@ -60,9 +62,10 @@ void ModifyDialog::construct(QWidget *parent, MySqlTableModel *DBModel){
     //The layout type is rid in order to add multiple fields in the same row
     //The layout could be changed to verical- a while loop - horizontal layout
     //if this field and the following are short fields
-    //QGridLayout *mainLayout=new QGridLayout;
-    QVBoxLayout *mainLayout = new QVBoxLayout;
+    QGridLayout *mainLayout=new QGridLayout;
+    //QVBoxLayout *mainLayout = new QVBoxLayout;
     QWidget *mainWidget = new QWidget(this);
+    mainWidget->setLayout(mainLayout);
     QScrollArea *scrArea = new QScrollArea(this);
 
     BaseModel=DBModel;
@@ -72,7 +75,8 @@ void ModifyDialog::construct(QWidget *parent, MySqlTableModel *DBModel){
 
     //The fields are read one by one and added in the correct position along the DispFields array
     for (int i=0;i<Fields.size();i++){
-        DispFields.append(new DisplayWidget(Fields[i].getName(),Fields[i].getType(),true));
+        //DispFields.append(new DisplayWidget(Fields[i].getName(),Fields[i].getType(),true));
+        DispFields.append(new DisplayWidget(DBModel->getField(i),true,this));
         mapper->addMapping(DispFields.last(),i,"Value");
     }
 
@@ -80,7 +84,7 @@ void ModifyDialog::construct(QWidget *parent, MySqlTableModel *DBModel){
     //sure there are 2 more fields available, if this is not true then the remaining field is simply added
     //by itself, with a horizontal box spacer if the field is of type TEXT.If not, if the two following fields
     //are both of type TEXT then the two are put in one horizontal box and the box is added to the main layout
-    //if only th efirst field is of type TEXT it is added to a horizontal box with a spacer, which is added to
+    //if only the first field is of type TEXT it is added to a horizontal box with a spacer, which is added to
     //the main layout, while the following field is added by itself. If at last the first field is something
     //other than TEXT then it is inserted as is in the main layout and the following widget is added with a
     //horizontal spacer
@@ -89,30 +93,47 @@ void ModifyDialog::construct(QWidget *parent, MySqlTableModel *DBModel){
     //2. TEXT && OTHER
     //3. OTHER && TEXT
 
-    int pos=0;
+    int pos = 0;
+    int row = 0;
+    int col = 0;
     while (pos<DispFields.size()){
         if(pos<DispFields.size()-1){
-            QHBoxLayout *temp_hLayout = new QHBoxLayout;
+            //QHBoxLayout *temp_hLayout = new QHBoxLayout;
             if (Fields[pos].getType()==DataType::Text && Fields[pos+1].getType()==DataType::Text){
-                temp_hLayout->addWidget(DispFields[pos]);
-                temp_hLayout->addWidget(DispFields[pos+1]);
-                mainLayout->addLayout(temp_hLayout);
+                mainLayout->addWidget(DispFields[pos],row, 0);
+                mainLayout->addWidget(DispFields[pos+1],row, 2);
+                row++;
+                pos += 2;
+                //temp_hLayout->addWidget(DispFields[pos]);
+                //temp_hLayout->addWidget(DispFields[pos+1]);
+                //mainLayout->addLayout(temp_hLayout);
             }else if(Fields[pos].getType()==DataType::Text){
-                temp_hLayout->addWidget(DispFields[pos]);
-                temp_hLayout->addStretch((this->width()/2));
-                mainLayout->addLayout(temp_hLayout);
-                mainLayout->addWidget(DispFields[pos+1]);
+                mainLayout->addWidget(DispFields[pos], row, 0);
+                row++;
+                pos++;
+                //temp_hLayout->addWidget(DispFields[pos]);
+                //temp_hLayout->addStretch((this->width()/2));
+                //mainLayout->addLayout(temp_hLayout);
+                //mainLayout->addWidget(DispFields[pos+1]);
             }else{
-                mainLayout->addWidget(DispFields[pos]);
-                temp_hLayout->addWidget(DispFields[pos+1]);
-                temp_hLayout->addSpacing((this->width()/2));
-                mainLayout->addLayout(temp_hLayout);
+                mainLayout->addWidget(DispFields[pos],row,0, 1,3);
+                row++;
+                pos++;
+                //mainLayout->addWidget(DispFields[pos]);
+                //temp_hLayout->addWidget(DispFields[pos+1]);
+                //temp_hLayout->addSpacing((this->width()/2));
+                //mainLayout->addLayout(temp_hLayout);
 
             }
-            pos+=2;
+            //pos+=2;
         }else{
-                mainLayout->addWidget(DispFields[pos]);
+            if(Fields[pos].getType()==DataType::Text){
+                mainLayout->addWidget(DispFields[pos],row,0);
                 pos++;
+            }else{
+                mainLayout->addWidget(DispFields[pos],row,0,1,3);
+                pos++;
+            }
         }
     }
     //The Button layout is created with two buttons
@@ -124,7 +145,7 @@ void ModifyDialog::construct(QWidget *parent, MySqlTableModel *DBModel){
     btnLayout->addWidget(btnReject);
     //The main layout is created with no margin, the scrollarea is created
     mainLayout->setMargin(0);
-    mainWidget->setLayout(mainLayout);
+    //mainWidget->setLayout(mainLayout);
     scrArea->setWidget(mainWidget);
     scrArea->adjustSize();
     scrArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -137,8 +158,7 @@ void ModifyDialog::construct(QWidget *parent, MySqlTableModel *DBModel){
     setContentsMargins(0,0,0,0);
 
     //The two buttons are linked to the respective signals
-    //connect(btnAccept,SIGNAL(clicked()),SLOT(accept()));
-    //connect(btnReject,SIGNAL(clicked()),this,SLOT(reject()));
+
     connect(btnAccept,SIGNAL(clicked()),SLOT(AcceptDialog()));
     connect(btnReject,SIGNAL(clicked()),this,SLOT(RejectDialog()));
     scrArea->setMinimumWidth(scrArea->contentsRect().width()+scrArea->verticalScrollBar()->width());
@@ -150,13 +170,14 @@ QVector<DisplayWidget *> ModifyDialog::getValues(){
 }
 
 void ModifyDialog::AcceptDialog(){
-
+    qDebug()<<"Modifications Accepted";
     mapper->submit();
-    BaseModel->submitAll();
+    BaseModel->submit();
     accept();
 }
 
 void ModifyDialog::RejectDialog(){
+    qDebug()<<"Modifications Rejected";
     mapper->model()->revert();
     reject();
 }

@@ -1,3 +1,4 @@
+#pragma once
 #ifndef QUERYGENERATOR_H
 #define QUERYGENERATOR_H
 #include <QString>

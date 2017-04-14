@@ -1,3 +1,4 @@
+#pragma once
 #ifndef MODIFYDIALOG_H
 #define MODIFYDIALOG_H
 #include <displaywidget.h>
@@ -10,6 +11,7 @@
 #include <QModelIndex>
 #include <QDataWidgetMapper>
 #include "myfield.h"
+//#include "metatypedeclaration.h"
 
 class ModifyDialog : public QDialog
 {

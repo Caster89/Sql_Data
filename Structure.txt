@@ -1,0 +1,37 @@
+How the database works:
+MAIN_TABLE: Contains the entries for all the elements in the database
+FIELDS_TABLE: Contains all the fields in the main table along with information on their type
+FieldRecord: Name | Table | Type | Visibility in Preview | Visibility in Table | Position | Primary
+
+
+
+As soon as a new database object is created it relies on the QSqlTableModel class, passing the
+parent and the database over to its initialization function. It then sets the base directory of
+the program to the directory of the sql database.
+Select():
+The select function of QSqlTableModel, used to ppopulate the table is overridden. The first table
+loaded is the Main_Table. This table contains all the entries for the database. Next a query is
+run on the Fields_table, ordering the fields by the position column, and creating an array "Fields"
+
+Data(index, role):
+This function is used to pull data from the database, e.g. in filling the table each cell is called
+in sequence. If the field is one store outside the Main_table a search is done on the correct table
+to obtain the data. The primary values for the current element are obtained using the getPrimary function.
+If the field is of type Image, instead of returning the path to the file, a QSqlRecord is created,
+containing the directory, filename ans stutus of the image.
+
+InsertRowIntoTable(values):
+Inserts a new record in the table. It first removes the values which are to be stored in a
+separate table, and memorizes them in a separat SqlRecord. It also creates a separate record for all
+those values which are not simple strings or numbers. These should be passed as a record with
+Directory and filename.
+The record is then inserted and it's directory created.
+The external fields are then added. they should be passed to the function as a QVectore of QSqlRecords
+
+UpdateRowInTable(row, values):
+Changes the values of some columns of a row. A check has to be made to insure that the primary values have
+not been changed. In case they have all the external tables will also have to be changed.
+The file fields are updated based on their status:
+'O' means nothign has changed and nothing will be done
+'R' means the file as to be removed
+'M' means the file is Modified, the old one should be removed and the new one put in its place

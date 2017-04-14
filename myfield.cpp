@@ -28,7 +28,20 @@ MyField::MyField(const MyField &orgField){
     Field_Primary=orgField.getPrimary();
 }
 
+MyField& MyField::operator=( MyField &orgField){
+
+
+    swap(*this,orgField);
+
+    return *this;
+}
+
 MyField& MyField::operator=( const MyField &orgField){
-    MyField newField(orgField.getName(),orgField.getTable(),orgField.getType(),orgField.getVisPreview(),orgField.getVisTable(),orgField.getPos(),orgField.getPrimary());
-    return newField;
+
+    MyField temp(orgField);
+    swap(*this,temp);
+    //MyField newField(orgField);
+    qDebug()<<"Creating Field from :"<<orgField.getName();
+    qDebug()<<"Created: "<<this->getName();
+    return *this;
 }

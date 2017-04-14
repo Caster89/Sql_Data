@@ -1,3 +1,4 @@
+#pragma once
 #ifndef IMAGEWIDGETDELEGATE_H
 #define IMAGEWIDGETDELEGATE_H
 #include <QWidget>
@@ -13,13 +14,14 @@
 #include <QCloseEvent>
 #include <QVariant>
 #include <QSqlRecord>
+#include "metatypedeclaration.h"
 
 class ImageWidgetDelegate: public QDialog
 {
     Q_OBJECT
     Q_PROPERTY(QSqlRecord currValue READ getValue WRITE setValue)
 public:
-    ImageWidgetDelegate(QWidget *parent, const QModelIndex & index, const QStyleOptionViewItem &option);
+    ImageWidgetDelegate(QWidget *parent, const QModelIndex & index, const QStyleOptionViewItem &option, bool readOnly = false);
 
     QString getText() const;
     void setText(const QString & text);
@@ -49,4 +51,5 @@ public slots:
     void changeDescription();
 };
 
+//Q_DECLARE_METATYPE(QSqlRecord);
 #endif // IMAGEWIDGETDELEGATE_H

@@ -49,10 +49,13 @@ MainWindow::MainWindow(QWidget *parent) :
     qDebug()<<"Begin Program\n";
 
     QFontDatabase fontDB;
-    /*fontDB.addApplicationFont(":/Fonts/CMR_Regular.ttf");
+    fontDB.addApplicationFont(":/Fonts/CMR_Regular.ttf");
     fontDB.addApplicationFont(":/Fonts/CMR_Bold.ttf");
     fontDB.addApplicationFont(":/Fonts/CMR_Italic.ttf");
-    fontDB.addApplicationFont(":/Fonts/CMR_BoldItalic.ttf");*/
+    fontDB.addApplicationFont(":/Fonts/CMR_BoldItalic.ttf");
+    QFont CMRFont = QFont("Computer Modern Roman");
+    QApplication::setFont(CMRFont);
+
 
 
 
@@ -74,10 +77,10 @@ MainWindow::MainWindow(QWidget *parent) :
     frmButtons->setLineWidth(1);
 
     QPushButton *btnAddRecord = new QPushButton("AddRecord",frmButtons);
-    QFont btnFont=btnAddRecord->font();
-    btnFont.setFamily("Computer Modern Roman");
-    btnFont.setWeight(QFont::Bold);
-    btnAddRecord->setFont(btnFont);
+    //QFont btnFont=btnAddRecord->font();
+    //btnFont.setFamily("Computer Modern Roman");
+    //btnFont.setWeight(QFont::Bold);
+    //btnAddRecord->setFont(btnFont);
     QPushButton *btnRemoveRecord = new QPushButton("Remove Record",frmButtons);
     QPushButton *btnModifyRecord = new QPushButton("Modify Record",frmButtons);
     QPushButton *btnPrint = new QPushButton("PRINT",frmButtons);
@@ -110,7 +113,7 @@ MainWindow::MainWindow(QWidget *parent) :
     mainLayout->addWidget(scrPreview);
 
     //A value is given to the database and a connetion is made using the custom CreatConnection
-    dbName="movies";
+    dbName="/Users/Castro/Documents/Svago/Programmazione/Qt/database/movies.sqlite";
     CreateConnection(dbName); //Go to method, return bool
     //QSqlQuery querytest (q.createUpdate("Main_table",Update,Where),db);
 
@@ -137,18 +140,14 @@ MainWindow::MainWindow(QWidget *parent) :
     //The table view signal "current changed" is connected to the slot which changes the selected record
     connect(dbTableView->selectionModel(),SIGNAL(currentChanged(QModelIndex,QModelIndex)),
             SLOT(currentSelectionChanged(const QModelIndex &)));
-
     connect(dbTableView,SIGNAL(doubleClicked(QModelIndex)),SLOT(recordDoubleClicked(const QModelIndex)));
-
+    connect(dbmodel, SIGNAL(modelReset()), this, SLOT(modelHasReset()));
+    connect(dbmodel, SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)), this, SLOT(dataChangeEmitted()));
+    //connect(dbmodel,SIGNAL(rowsInserted(QModelIndex,int,int)), this, SLOT(rowsInsertedEmitted(QModelIndex,int,int)));
     connect(btnAddRecord,SIGNAL(clicked()),SLOT(createNewRecord()));
     connect(btnRemoveRecord,SIGNAL(clicked()),SLOT(deleteRecord()));
     connect(btnModifyRecord,SIGNAL(clicked()),SLOT(updateRecord()));
     connect(btnPrint,SIGNAL(clicked()),this,SLOT(printRecord()));
-
-
-
-
-
 
 }
 
@@ -158,7 +157,15 @@ MainWindow::~MainWindow()
 }
 
 void MainWindow::printRecord(){
-    PrintSetup *printWidget=new PrintSetup(dbmodel->getFields());
+    QVector<QSqlRecord> printRecords;
+    QModelIndexList selRows = dbTableView->selectionModel()->selectedRows();
+    for (int i =0; i<selRows.count();i++){
+        printRecords.append(dbmodel->record(selRows[i].row()));
+        qDebug()<<"Record to print: "<<printRecords.last();
+    }
+
+    //printRecords.append(dbmodel->record(2));
+    PrintSetup *printWidget=new PrintSetup(dbmodel->getFields(),printRecords);
     QWidget *compWidget= new QWidget();
     QHBoxLayout *test =new QHBoxLayout();
     compWidget->setLayout(test);
@@ -173,7 +180,10 @@ bool MainWindow::CreateConnection(QString dbDir){
     db=QSqlDatabase::addDatabase("QSQLITE");
 
     //db.setDatabaseName(QString("%1/%1").arg(dbDir));
-    db.setDatabaseName("/movies/movies");
+    QFileInfo *dbFile = new QFileInfo(dbDir);
+    QDir::setCurrent(dbFile->absolutePath());
+    qDebug()<<"Set current directory to: "<<dbFile->absolutePath();
+    db.setDatabaseName(dbFile->fileName());
     qDebug()<<db.databaseName();
 
     if (!db.open()){
@@ -182,18 +192,25 @@ bool MainWindow::CreateConnection(QString dbDir){
     }
     qDebug()<<"DB Created";
     dbmodel= new MySqlTableModel(this,db);
+    //dbmodel->setEditStrategy(QSqlTableModel::OnManualSubmit);
     dbmodel->select();
+
     //The main table is loaded. It contains all the main data.
 
 
 
     //The table view is prepared by setting the model and other options
+
     dbTableView->setModel(dbmodel);
+
     dbTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
-    dbTableView->resizeColumnsToContents();
+
+    //dbTableView->resizeColumnsToContents();
+
     //The fields array is iterated and each data column in the model is named, while the ones which should not
     //be previewd in the table are hidden.
     mapper->setModel(dbmodel);
+
     for(int n=0;n<dbmodel->getFields().size();n++){
         //dbmodel->setHeaderData(n,Qt::Horizontal,Fields[n][0]);
         if(!dbmodel->getField(n).getVisTable()){
@@ -202,7 +219,8 @@ bool MainWindow::CreateConnection(QString dbDir){
         //Each field is checked to see whether it should appear in the preview frame.
         //If so a label is created and added to the prwFields, ad a blank one is added to prwValues.
         if (dbmodel->getField(n).getVisPreview()){
-            prwItems.push_back(new DisplayWidget(dbmodel->getField(n).getName(),dbmodel->getField(n).getType(),false));
+            //prwItems.push_back(new DisplayWidget(dbmodel->getField(n).getName(),dbmodel->getField(n).getType(),false));
+            prwItems.push_back(new DisplayWidget(dbmodel->getField(n),false));
             mapper->addMapping(prwItems.last(),n,"Value");
         }
     }
@@ -214,7 +232,7 @@ bool MainWindow::CreateConnection(QString dbDir){
     dbTableView->setStyleSheet("alternate-background-color:#99DDFF;background-color:white;");
     //sets no triggers to edit the information
     dbTableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
-
+    qDebug()<<"EDIT StRATEGY "<<dbmodel->editStrategy();
     return true;
 
 
@@ -243,16 +261,23 @@ QVector<QVector<QString> > MainWindow::getPrimary(){
     return Primary_keys;
 }
 
-QVector<QVector<QString> > MainWindow::getFields(){
-    //return Fields;
+//QVector<QVector<QString> > MainWindow::getFields(){
+QVector<MyField> MainWindow::getFields(){
+    return Fields;
 }
 
 void MainWindow::createNewRecord(){
     //This slot is linked to the AddRecord QPushButton signal
     //The ModfyDialog is created, passing in the parent and the name of the fields
-    dbmodel->insertRows(dbmodel->rowCount(),1,QModelIndex());
+    qDebug()<<"Main Window called to create a new record";
+    qDebug()<<"Currently there are "<<dbmodel->rowCount()<<" rows in the table";
+    dbmodel->insertRow(dbmodel->rowCount());
+    qDebug()<<"There are now "<<dbmodel->rowCount()<<" rows in the table";
+    //dbmodel->insertRow(dbmodel->rowCount(),1,QModelIndex());
+    qDebug()<<"Setting the mappers index to: "<<dbmodel->rowCount()-1;
     ModifyDialog modDialog(this,dbmodel,dbmodel->rowCount()-1);
     //If the query is accepted
+
     modDialog.exec();
 //    if(querygen.exec()==QDialog::Accepted){
 //        //The inserted values are retreived
@@ -377,12 +402,23 @@ void MainWindow::createNewRecord(){
 bool MainWindow::deleteRecord(){
     qDebug()<<"deleting Record in position: "<<dbTableView->currentIndex().row();
     int row = dbTableView->currentIndex().row();
-    dbmodel->removeRows(row,1);
-    return true;
+    QMessageBox msgBox;
+    msgBox.setText("Are you sure you want to delete the record?");
+    //msgBox.setInformativeText("Do you want to save your changes?");
+    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No );
+    msgBox.setDefaultButton(QMessageBox::No);
+
+    if (msgBox.exec()==QMessageBox::Yes){
+        qDebug()<<"Decided to remove record";
+        dbmodel->removeRows(row,1);
+        return dbmodel->submit();
+    }
+    return false;
 }
 
 bool MainWindow::updateRecord(){
     //This slot is linked to the AddRecord QPushButton signal
     ModifyDialog modDialog(this,dbmodel,dbTableView->currentIndex().row());
     modDialog.exec();
+    return true;
 }

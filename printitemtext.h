@@ -1,3 +1,4 @@
+#pragma once
 #ifndef PRINTITEMTEXT_H
 #define PRINTITEMTEXT_H
 
@@ -7,6 +8,8 @@
 #include <QGroupBox>
 #include <QFont>
 #include <QCheckBox>
+#include <QTextDocument>
+#include <QButtonGroup>
 
 class PrintItemText : public PrintItemBase
 {
@@ -14,7 +17,7 @@ class PrintItemText : public PrintItemBase
 public:
     PrintItemText();
     PrintItemText(MyField field);
-    void paint(QPainter *p){}
+    void paintItem(QTextDocument *doc, QTextCursor *cursor, QSqlRecord *record);
     
     ~PrintItemText(){}
     
@@ -26,12 +29,23 @@ private:
 
     QFontComboBox *valueFontStyle = new QFontComboBox(valueBox);
     QCheckBox * NewLine = new QCheckBox("Print value on a new line",valueBox);
+
     QLabel *lblValueFont=new QLabel("Font: ",valueBox);
     QLabel *lblValueSize=new QLabel("Size: ",valueBox);
+
     QComboBox *valueSize = new QComboBox(valueBox);
+
     QToolButton *valueBold = new QToolButton(valueBox);
     QToolButton *valueUnderlined = new QToolButton(valueBox);
     QToolButton *valueItalics = new QToolButton(valueBox);
+
+    QToolButton *valueLeft = new QToolButton(valueBox);
+    QToolButton *valueCenter = new QToolButton(valueBox);
+    QToolButton *valueRight = new QToolButton(valueBox);
+    QToolButton *valueJustify = new QToolButton(valueBox);
+
+    QButtonGroup *alignGroup = new QButtonGroup();
+
 
     void buildWidget();
 
@@ -39,6 +53,7 @@ private:
     
 private slots:
     void valueFontChanged();
+    void alignmentChanged(int align);
     
 };
 

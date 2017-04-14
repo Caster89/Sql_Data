@@ -1,3 +1,4 @@
+#pragma once
 #ifndef MYSQLTABLEMODEL_H
 #define MYSQLTABLEMODEL_H
 #include <QtWidgets>
@@ -10,6 +11,7 @@
 #include <QDir>
 #include <querygenerator.h>
 #include "myfield.h"
+#include "metatypedeclaration.h"
 
 class QSqlTableModelPrivate;
 
@@ -18,24 +20,25 @@ class MySqlTableModel : public QSqlTableModel
     Q_OBJECT
 
 public:
-    enum dataType{
+    /*enum dataType{
         Text,
         LongText,
         Image,
         Images,
         Other,
-    };
+    };*/
+    const QVector<QString> Disp = { "DisplayRole", "DecorationRole", "EditRole", "ToolTipRole", "StatusTipRole", "WhatsThisRole", "FontRole", "TextAlignmentRole", "BackgroundRole", "ForegroundRole", "CheckStateRole", "AccessibleTextRole", "AccessibleDescriptionRole", "SizeHintRole", "InitialSortOrderRole" };
 
     MySqlTableModel(QWidget *parent, QSqlDatabase newDB);
 
+    // Loads the necessary data in the model, such as the fields and their table
     bool select();
-
     //int rowCount (const QModelIndex &parent) const;
     //int columnCount(const QModelIndex &parent) const;
     QVariant data(const QModelIndex &index, int role) const;
     QVariant headerData(int section, Qt::Orientation orientation, int role= Qt::DisplayRole) const;
-    void revertRow(int row);
-    bool removeRows(int row,int count, const QModelIndex &parent=QModelIndex());
+    //void revertRow(int row);
+    //bool removeRows(int row,int count, const QModelIndex &parent=QModelIndex());
     void setTable(const QString &tableName);
     bool insertRowIntoTable(const QSqlRecord &values);
     bool insertRowIntoTable(const QSqlRecord &values,QSqlRecord primaryValues,QString table);
@@ -43,7 +46,7 @@ public:
     bool updateRowInTable(const QSqlRecord &values,QSqlRecord primaryValues,QString table);
     bool deleteFromTable(const QSqlRecord &values, QString tableName);
     bool deleteRowFromTable(int row);
-    QString copyFile(const QSqlRecord &values,QSqlRecord primaryValues, QString table);
+    QString copyFile(const QSqlRecord &record, QSqlRecord primaryValues, QString table);
     bool deleteRecordDirectory(QSqlRecord newRec);
     int insertIndex;
     int editIndex;
@@ -51,21 +54,21 @@ public:
     //QVector Values;
     QVector<QSqlRecord > Values;
 
-    bool insertRow(int row, const QModelIndex &parent);
-    bool insertRows(int row, int count, const QModelIndex &parent);
-    bool setData(const QModelIndex &index, const QVariant &value, int role);
+    //bool insertRow(int row, const QModelIndex &parent);
+    //bool insertRows(int row, int count, const QModelIndex &parent);
+    //bool setData(const QModelIndex &index, const QVariant &value, int role);
 
 
 
-    //QSqlRecord record(int Rec_index);
+    QSqlRecord record(int Rec_index) const;
     QVector<MyField> getFields();
     MyField getField(int section);
     inline int indexOf(QString FieldName){
         return baseRecord.indexOf(FieldName);
     }
 
-    bool submitAll();
-    bool submit();
+    //bool submitAll();
+    //bool submit();
 
 private:
     //Varaible containing the database to which the model is connected
@@ -99,8 +102,8 @@ private:
     QSqlRecord bufferRecord;
 
     //Method to clear the buffer information
-    void clearEditBuffer();
-    void revert();
+    //void clearEditBuffer();
+    //void revert();
 
 
     bool canUpdate(QSqlRecord *avlbRecord);
@@ -108,11 +111,15 @@ private:
     QSqlRecord getPrimary(const QModelIndex &index) const;
     QSqlRecord getPrimary(int row) const;
     bool createDirectory(QSqlRecord newRec);
-    QString GetDirectory(QSqlRecord newRec);
+    QString GetDirectory(QSqlRecord newRec, bool relative = true) const;
+    QString GetDirectory(QSqlRecord newRec, MyField field, bool relative = true);
+    bool removeFile(QSqlRecord record, QSqlField field);
     bool insertImages(QString TableName,QSqlRecord Primary_Values,QVector<QSqlRecord> Images);
     bool primaryChange(QSqlRecord oldPrim, QSqlRecord newPrim);
     QSqlRecord separateDir(QSqlRecord altRecord);
 
 };
 
+//Q_DECLARE_METATYPE(QSqlRecord);
+//Q_DECLARE_METATYPE(QVector<QSqlRecord>);
 #endif // MYSQLTABLEMODEL_H

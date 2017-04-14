@@ -8,6 +8,7 @@ QT       += core gui
 QT       += sql
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+qtHaveModule(printsupport): QT += printsupport
 
 TARGET = Sql_Data
 TEMPLATE = app
@@ -16,7 +17,6 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     modifydialog.cpp \
-    displaywidget.cpp \
     imageitemdelegate.cpp \
     imagewidgetdelegate.cpp \
     labeledtext.cpp \
@@ -31,11 +31,21 @@ SOURCES += main.cpp\
     printitemimage.cpp \
     printitem.cpp \
     printsetup.cpp \
-    mystackedwidget.cpp
+    mystackedwidget.cpp \
+    printitemimages.cpp \
+    displaywidgetbase.cpp \
+    displaywidgettext.cpp \
+    displaywidgetlongtext.cpp \
+    displaywidgetimage.cpp \
+    displaywidgetimages.cpp \
+    displaywidget_old.cpp \
+    displaywidget.cpp \
+    myprintlist.cpp \
+    dragscrollarea.cpp\
+    printitemstatic.cpp
 
 HEADERS  += mainwindow.h \
     modifydialog.h \
-    displaywidget.h \
     imageitemdelegate.h \
     imagewidgetdelegate.h \
     labeledtext.h \
@@ -51,9 +61,25 @@ HEADERS  += mainwindow.h \
     printitemimage.h \
     printitem.h \
     printsetup.h \
-    mystackedwidget.h
+    mystackedwidget.h \
+    printitemimages.h \
+    displaywidgetbase.h \
+    displaywidgettext.h \
+    displaywidgetlongtext.h \
+    displaywidgetimage.h \
+    displaywidgetimages.h \
+    metatypedeclaration.h \
+    displaywidget_old.h \
+    displaywidget.h \
+    myprintlist.h \
+    dragscrollarea.h\
+    printitemstatic.h
 
 FORMS    += mainwindow.ui
 
 RESOURCES += \
     images.qrc
+
+DISTFILES += \
+    Modify.txt \
+    Structure.txt
