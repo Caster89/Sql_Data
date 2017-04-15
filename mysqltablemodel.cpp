@@ -304,6 +304,7 @@ bool MySqlTableModel::updateRowInTable(int row, const QSqlRecord &values){
                 rec.value(rec.indexOf(Fields[i].getName())).isValid() &&
                 !rec.value(rec.indexOf(Fields[i].getName())).isNull()){
             QSqlRecord currRec=qvariant_cast<QSqlRecord>(rec.value(Fields[i].getName()));
+
             if(currRec.value("Status").toString()=="N"){
                     QString newFile = currRec.value("File").toString();
                     QFileInfo *newFileInfo = new QFileInfo(newFile);
@@ -566,11 +567,13 @@ MyField MySqlTableModel::getField(int section){
 
 QSqlRecord MySqlTableModel::record(int Rec_index) const{
     QSqlRecord returnRecord(baseRecord);
+    qDebug()<<"Trying to fill the following record: "<<baseRecord;
     for(int i=0;i<returnRecord.count();i++){
         int col=fieldIndex(returnRecord.fieldName(i));
         if (Fields[col].getTable()!="Main_table"){
             returnRecord.replace(col,QSqlField(Fields[col].getName()));
         }
+
         returnRecord.setValue(returnRecord.fieldName(i),data(index(Rec_index,col),Qt::DisplayRole));
     }
     return returnRecord;

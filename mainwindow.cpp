@@ -83,7 +83,7 @@ MainWindow::MainWindow(QWidget *parent) :
     //btnAddRecord->setFont(btnFont);
     QPushButton *btnRemoveRecord = new QPushButton("Remove Record",frmButtons);
     QPushButton *btnModifyRecord = new QPushButton("Modify Record",frmButtons);
-    QPushButton *btnPrint = new QPushButton("PRINT",frmButtons);
+    QPushButton *btnPrint = new QPushButton("Export",frmButtons);
 
     QHBoxLayout *btnLayout = new QHBoxLayout;
     btnLayout->addWidget(btnAddRecord);

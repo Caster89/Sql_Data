@@ -1,3 +1,21 @@
+14-Apr-2017
+Major changes in how the printing is done for the different field type. Added a print preview, and the
+qwidget holding the different elements is now a dragscroll area. Biggest change is the Images item
+whihc now prints tables within a table to place the idfferent images and their captions in the right
+position.
+TO DO:
+-Fix the print image widget
+-Add the possibility to print on the same line as the previous element
+-Implement the "drag to reorder" functionality ot dragscrollarea:
+    http://stackoverflow.com/questions/18299077/dragging-a-qwidget-in-qt-5
+    http://stackoverflow.com/questions/2244890/qt-qscrollarea-widget-clipping-contents
+    http://stackoverflow.com/questions/16468015/qscollarea-doesnt-autoscroll-when-dragging-inside-it/16470989#16470989
+-Add a comments field in the Fields table to store possible information on the fields (maybe also a description)
+-Add a multiple selection field
+-Add a dimensions field
+-add a combined field (one title, multiple fields, one separator) using the comments field
+-resize images added to an image field
+
 5-Apr-2017
 Corrections were made to MySqlTableModel after the previous change. Inser, Update and Remove now seem to
 work properly. The only glitch is that when a row is removed and empty row remains in the QTableView.

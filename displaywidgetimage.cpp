@@ -64,7 +64,7 @@ void DisplayWidgetImage::updateImage(){
         lblEditImage->setPixmap(QPixmap(File));
         lblNonEditImage->setPixmap(QPixmap(File));
     }else{
-        noImage = noImage.scaled(this->width(), 1000, Qt::KeepAspectRatio);
+        noImage = noImage.scaledToWidth(this->width());
         lblEditImage->setPixmap(noImage);
         lblNonEditImage->setPixmap(noImage);
     }
