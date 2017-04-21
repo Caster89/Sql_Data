@@ -30,10 +30,11 @@
 #include <QTextCursor>
 #include <QTextDocument>
 #include <QMap>
+#include "draggablewidget.h"
 #endif
 
 
-class PrintItemBase: public QFrame
+class PrintItemBase: public DraggableWidget
 {
     Q_OBJECT
 public:
@@ -68,6 +69,10 @@ protected:
     QVBoxLayout *baseLayout = new QVBoxLayout();
     QGroupBox *baseGroup = new QGroupBox();
     QGroupBox *derivedGroup = new QGroupBox();*/
+    //col 25B row 6
+    QChar rightTri = QChar(0xB6,0x25);
+    //col 25B row C
+    QChar downTri = QChar(0xBC,0x25);
     enum imageSize{
         FullPage=0,
         FullWidth,
@@ -93,7 +98,8 @@ protected:
     //and arrow (Up of right) and a label with the name of the field
     QLabel *lblTitle = new QLabel(this);
     //QLabel *lblArrow=new QLabel(QChar(9,207));
-    QLabel *lblArrow=new QLabel("q");
+    //QLabel *lblArrow=new QLabel("q");
+    QLabel *lblArrow = new QLabel(downTri);
     QLabel *lblClose = new QLabel("X");
 
     //The three basic widgets ar created, a stacked widget
@@ -113,7 +119,7 @@ protected:
     QVBoxLayout *valueLayout = new QVBoxLayout(valueBox);
     QVBoxLayout *boxLayout = new QVBoxLayout();
 
-
+    QCheckBox *previousLine = new QCheckBox("Print on previous line:");
 
     //The widgets for setting the style of the title are created
     //QCheckbox for selecting whether to print or not
@@ -146,6 +152,7 @@ private slots:
     void titlePrintChanged();
     void titleFontChanged();
     void titleAlignmentChanged(int align);
+    void positioningChanged();
 
 signals:
     void closeWidget();

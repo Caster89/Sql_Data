@@ -124,12 +124,32 @@ void PrintItemLongText::alignmentChanged(int align){
 }
 
 void PrintItemLongText::paintItem(QTextDocument *doc, QTextCursor *cursor, QSqlRecord* record){
-    //QTextCursor cursor(doc);
+    /*
     QTextFrame *topFrame =cursor->currentFrame();
     QTextFrameFormat frameFormat=topFrame->frameFormat();
     QTextFrame *frame=cursor->insertFrame(frameFormat);
 
     //QTextFrame *topFrame = cursor.currentFrame();
+    QTextBlockFormat blockFormat = cursor->blockFormat();
+    cursor->movePosition(QTextCursor::End);
+    if (previousLine->isChecked()){
+        cursor->movePosition(QTextCursor::PreviousBlock);
+        cursor->movePosition(QTextCursor::EndOfBlock);
+        cursor->insertText(" ");
+    }else{
+        QTextFrame *frame=cursor->insertFrame(frameFormat);
+    }*/
+
+    QTextFrame *topFrame =cursor->currentFrame();
+    QTextFrameFormat frameFormat=topFrame->frameFormat();
+    cursor->movePosition(QTextCursor::End);
+    if (previousLine->isChecked()){
+        cursor->movePosition(QTextCursor::PreviousBlock);
+        cursor->movePosition(QTextCursor::EndOfBlock);
+        cursor->insertText(" ");
+    }else{
+        QTextFrame *frame=cursor->insertFrame(frameFormat);
+    }
     QTextBlockFormat blockFormat = cursor->blockFormat();
 
     if(titleVisible->isChecked()){

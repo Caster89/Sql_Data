@@ -6,6 +6,7 @@
 #include "printitemtext.h"
 #include "printitemlongtext.h"
 #include "printitemstatic.h"
+#include "printitemcombined.h"
 #include <QStackedWidget>
 #include <QDebug>
 #include <QWidget>
@@ -18,22 +19,28 @@ PrintItem::PrintItem(MyField newField, QWidget *parent) : QWidget(parent)
 
     QHBoxLayout *displayLayout = new QHBoxLayout;
     switch(newField.getType()){
-    case(DataType::Text):
-        printItemPointer= new PrintItemText(newField);
+        case(DataType::Text):
+        case( DataType::MultipleChoice):
+            printItemPointer= new PrintItemText(newField);
+            break;
+        case(DataType::LongText):
+            printItemPointer= new PrintItemLongText(newField);
+            break;
+        case(DataType::Image):
+            printItemPointer=new PrintItemImage(newField);
+            break;
+        case(DataType::Images):
+            printItemPointer=new PrintItemImages(newField);
+            break;
+        case(DataType::Static):
+            printItemPointer=new PrintItemStatic(newField);
+        case(DataType::Combined):
+            printItemPointer=new PrintItemCombined(newField);
         break;
-    case(DataType::LongText):
-        printItemPointer= new PrintItemLongText(newField);
-        break;
-    case(DataType::Image):
-        printItemPointer=new PrintItemImage(newField);
-        break;
-    case(DataType::Images):
-        printItemPointer=new PrintItemImages(newField);
-        break;
-    case(DataType::Static):
-        printItemPointer=new PrintItemStatic(newField);
     }
     displayLayout->addWidget(printItemPointer);
+    displayLayout->setMargin(1);
+    displayLayout->setSpacing(1);
     setLayout(displayLayout);
     connect(printItemPointer, SIGNAL(closeWidget()),this,SIGNAL(closeWidget()));
     connect(printItemPointer, SIGNAL(itemModified()),this, SIGNAL(itemModified()));

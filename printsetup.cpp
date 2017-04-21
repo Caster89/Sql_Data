@@ -9,13 +9,26 @@
 #include <QDebug>
 #include <QListWidgetItem>
 #include <QStringList>
+#include <QFileDialog>
+#include <QStandardPaths>
+#include <QPdfWriter>
 
 
 
-PrintSetup::PrintSetup(QVector<MyField> avlbFields, QVector<QSqlRecord> newRecords, QWidget *parent) : QWidget(parent)
+PrintSetup::PrintSetup(QVector<MyField> avlbFields, QVector<QSqlRecord> newRecords, QWidget *parent) : QDialog(parent)
 {
+
     Fields=avlbFields;
     Fields.append(MyField("Static String","Main_table", DataType::Static));
+    QString allTextFields = "";
+    for (int i =0; i<avlbFields.count();i++){
+        qDebug()<<"Getting Field: "<<i;
+        if (avlbFields[i].getType()==DataType::Text || avlbFields[i].getType()==DataType::LongText){
+            allTextFields.append(QString("%1;").arg(avlbFields[i].getName()));
+        }
+    }
+    allTextFields.chop(1);
+    Fields.append(MyField("Combined",allTextFields, DataType::Combined));
 
     records=newRecords;
 
@@ -31,11 +44,11 @@ PrintSetup::PrintSetup(QVector<MyField> avlbFields, QVector<QSqlRecord> newRecor
     savePrinter->setOutputFormat(QPrinter::PdfFormat);
 
     populateSetup();
-    savePrinter->setPaperSize(avlbPaperSize->value(cmbPageSize->currentText()));
+    //savePrinter->setPaperSize(avlbPaperSize->value(cmbPageSize->currentText()));
     //previewPrinter->setPaperSize(avlbPaperSize->value(cmbPageSize->currentText()));
 
 
-    savePrinter->setResolution(cmbResolution->currentData().toInt());
+    //savePrinter->setResolution(cmbResolution->currentData().toInt());
     //previewPrinter->setResolution(600);
 
     printPreview = new QPrintPreviewWidget(previewPrinter);
@@ -46,18 +59,21 @@ PrintSetup::PrintSetup(QVector<MyField> avlbFields, QVector<QSqlRecord> newRecor
     pageSetupLayout->addWidget(cmbResolution,1,4,1,1);
 
     mainLayout->addWidget(btnAddField,1,2,1,1);
-    mainLayout->addWidget(printItemList,2,1,5,4);
-    mainLayout->addWidget(printPreview,1,5,6,6);
+    mainLayout->addWidget(printItemList,2,1,5,3);
+    mainLayout->addWidget(printPreview,1,4,6,6);
     mainLayout->addLayout(pageSetupLayout,7,1,1,4);
-
+    mainLayout->addWidget(btnExport,7,9,1,1);
 
     connect(btnAddField,SIGNAL(clicked()),this,SLOT(addField()));
     connect(printPreview, SIGNAL(paintRequested(QPrinter*)), this, SLOT(previewPrint(QPrinter*)));
     connect(printItemList, SIGNAL(itemAdded()), this, SLOT(printUpdated()));
     connect(printItemList, SIGNAL(itemModified()), this, SLOT(printUpdated()));
+    connect(printItemList, SIGNAL(itemMoved()), this, SLOT(printUpdated()));
     connect(cmbPageSize, SIGNAL(currentIndexChanged(int)), this, SLOT(pageSetupUpdated()));
     connect(cmbResolution, SIGNAL(currentIndexChanged(int)), this, SLOT(pageSetupUpdated()));
+    connect(btnExport, SIGNAL(clicked(bool)),this,SLOT(printRecords()));
     resize(1000,1000);
+    setMinimumHeight(400);
 
 
 
@@ -89,23 +105,18 @@ void PrintSetup::populateSetup(){
 }
 
 void PrintSetup::pageSetupUpdated(){
-    /*
-    savePrinter->setPaperSize(avlbPaperSize->value(cmbPageSize->currentText()));
-    previewPrinter->setPaperSize(avlbPaperSize->value(cmbPageSize->currentText()));
-    savePrinter->setResolution(cmbResolution->currentData().toInt());
-    previewPrinter->setResolution(cmbResolution->currentData().toInt());
-    */
+
     savePrinter->setPaperSize(avlbPaperSize->value(cmbPageSize->currentText()));
     savePrinter->setResolution(cmbResolution->currentData().toInt());
 
     qDebug()<<"Selected page size: "<<cmbPageSize->currentText();
     qDebug()<<"Enum value: "<<avlbPaperSize->value(cmbPageSize->currentText());
-    qDebug()<<"Size: "<<previewPrinter->pageSize();
-    qDebug()<<"Rect: "<<previewPrinter->pageRect(QPrinter::DevicePixel);
+    qDebug()<<"Size: "<<savePrinter->pageSize();
+    qDebug()<<"Rect: "<<savePrinter->pageRect(QPrinter::DevicePixel);
 
-    qDebug()<<"Printer Preview Res: "<<previewPrinter->resolution();
-    qDebug()<<"Printer DPI: "<<previewPrinter->physicalDpiX()<<"x"<<previewPrinter->physicalDpiY();
-    qDebug()<<"Printer DPI: "<<previewPrinter->logicalDpiX()<<"x"<<previewPrinter->logicalDpiY();
+    qDebug()<<"Printer Preview Res: "<<savePrinter->resolution();
+    qDebug()<<"Printer DPI: "<<savePrinter->physicalDpiX()<<"x"<<savePrinter->physicalDpiY();
+    qDebug()<<"Printer DPI: "<<savePrinter->logicalDpiX()<<"x"<<savePrinter->logicalDpiY();
 
     printUpdated();
 }
@@ -120,31 +131,28 @@ void PrintSetup::addField(){
 }
 
 void PrintSetup::printRecords(){
-
-
-    QString fileName("/Users/Nick/Desktop/prova.pdf");
+    QString fileName = QFileDialog::getSaveFileName(this, "Save File",
+                               QStandardPaths::displayName(QStandardPaths::DocumentsLocation));
+    fileName.append(".pdf");
+    //savePrinter = new QPdfWriter(fileName);
     savePrinter->setOutputFileName(fileName);
+    //QPdfWriter *pdfWriter = new QPdfWriter(fileName);
+    //pdfWriter->setResolution(cmbResolution->currentData().toInt());
+    //pdfWriter->setPageSize(QPageSize(QPageSize::A4));
+    //qDebug()<<"Printer Dimensions: "<<pdfWriter->pageSize();
+                //avlbPaperSize->value(cmbPageSize->currentText()));
+    //QTextDocument *doc = printItemList->printRecords(savePrinter);
     QTextDocument *doc = printItemList->printRecords(savePrinter);
+    qDebug()<<"DPI: "<<doc->pageSize();
+    qDebug()<<"The size of the page "<<savePrinter->pageRect(QPrinter::DevicePixel);
+    qDebug()<<"The size of the page "<<savePrinter->pageRect(QPrinter::Millimeter);
+    qDebug()<<"The size of the page "<<savePrinter->pageRect(QPrinter::Inch);
     doc->print(savePrinter); // doc is QTextDocument *
 }
 
 void PrintSetup::previewPrint(QPrinter *printer){
-    qDebug()<<"Preview print called";
     QTextDocument *doc = printItemList->printRecords(printer);
-    /*QTextDocument *doc=new QTextDocument();
-    QTextCursor cursor(doc);
-    QTextFrame *topFrame =cursor.currentFrame();
-    QTextFrameFormat frameFormat=topFrame->frameFormat();
-    QTextFrame *currFrame=cursor.insertFrame(frameFormat);
-    for(int n=0;n<records.count();n++){
 
-        for(int i=0;i<printItems.count();i++){
-            printItems[i]->paintItem(currFrame,&records[n]);
-            cursor.setPosition(topFrame->lastPosition());
-            currFrame=cursor.insertFrame(frameFormat);
-
-        }
-    }*/
     qDebug()<<doc->toPlainText();
     doc->print(printer); // doc is QTextDocument *
 }

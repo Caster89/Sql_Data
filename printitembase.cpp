@@ -14,13 +14,13 @@
 #include <QFont>
 
 PrintItemBase::PrintItemBase(QWidget *parent)
-    :QFrame(parent)
+    :DraggableWidget(parent)
 {
     //buildWidget();
 }
 
 PrintItemBase::PrintItemBase(MyField newField, QWidget *parent)
-    :QFrame(parent)
+    :DraggableWidget(parent)
 {
     field = newField;
     lblTitle->setText(field.getName());
@@ -159,9 +159,10 @@ void PrintItemBase::buildWidget(){
     connect(titleItalics,SIGNAL(clicked()),this,SLOT(titleFontChanged()));
     connect(titleUnderlined,SIGNAL(clicked()),this,SLOT(titleFontChanged()));
     connect(titleAlignGroup, SIGNAL(buttonClicked(int)),this,SLOT(titleAlignmentChanged(int)));
-
+    connect(previousLine, SIGNAL(stateChanged(int)), this, SLOT(positioningChanged()));
 
     //The title box and value box are added to the boxLayout
+    boxLayout->addWidget(previousLine);
     boxLayout->addWidget(titleBox);
     boxLayout->addWidget(valueBox);
 
@@ -187,6 +188,10 @@ PrintItemBase::PrintItemBase(const PrintItemBase &orgItem){
     /*editWidget=orgItem.getWidget();
     titleBox=orgItem.titleBox;
     field=orgItem.field;*/
+}
+
+void PrintItemBase::positioningChanged(){
+    emit itemModified();
 }
 
 void PrintItemBase::titleAlignmentChanged(int align){
@@ -245,14 +250,14 @@ bool PrintItemBase::eventFilter(QObject *obj, QEvent *event){
         if(expanded ){
             for(int i=0;i<boxLayout->count();i++){
                 boxLayout->itemAt(i)->widget()->setVisible(false);
-                lblArrow->setText("u");
+                lblArrow->setText(rightTri);
                 expanded=false;
             }
 
         }else if(!expanded){
             for(int i=0;i<boxLayout->count();i++){
                 boxLayout->itemAt(i)->widget()->setVisible(true);
-                lblArrow->setText("q");
+                lblArrow->setText(downTri);
                 expanded=true;
             }
         }

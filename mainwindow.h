@@ -12,6 +12,8 @@
 #include <labeledtext.h>
 #include <displaywidget.h>
 #include <QDataWidgetMapper>
+#include <QMenu>
+#include <QAction>
 #include "myfield.h"
 #include "mysqltablemodel.h"
 //#include "metatypedeclaration.h"
@@ -38,6 +40,8 @@ private slots:
     bool deleteRecord();
     bool updateRecord();
     void printRecord();
+    bool newDB();
+    bool openDB();
     inline void modelHasReset(){
         qDebug()<<"ModelHasReset";
     }
@@ -54,22 +58,36 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+    void createMenu();
+    void createActions();
+
     bool CreateConnection(QString dbDir);
+
     QString dbName;
     QSqlDatabase db;
     //QSqlTableModel *dbmodel;
-    MySqlTableModel *dbmodel;
+    MySqlTableModel *dbmodel = new MySqlTableModel();
     QTableView *dbTableView;
     QVector<QString> Tables_List;
     QVector<MyField> Fields;
     QVector<QVector<QString> > Primary_keys;
-    QVector<QLabel*> prwFields;
-    QVector<QLabel*> prwValues;
+
     QVector<DisplayWidget*> prwItems;
     //QVector<DisplayWidgetBase*> prwItems;
     QDataWidgetMapper *mapper= new QDataWidgetMapper;
+    QVBoxLayout *prwLayout = new QVBoxLayout();
+    QFrame *frmPreview = new QFrame();
+    QScrollArea *scrPreview = new QScrollArea();
 
+    QMenu *fileMenu;
+    QAction *newAct;
+    QAction *openAct;
+    QAction *exportAct;
 
+protected:
+#ifndef QT_NO_CONTEXTMENU
+    void contextMenuEvent(QContextMenuEvent *event) override;
+#endif // QT_NO_CONTEXTMENU
 
 };
 

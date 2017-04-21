@@ -23,6 +23,7 @@
 #include "displaywidgetimages.h"
 #include "displaywidgettext.h"
 #include "displaywidgetlongtext.h"
+#include "displaywidgetmultiplechoice.h"
 
 
 DisplayWidget::DisplayWidget(MyField newField, bool Edit,  QWidget *parent) :
@@ -30,18 +31,22 @@ DisplayWidget::DisplayWidget(MyField newField, bool Edit,  QWidget *parent) :
 {
     QHBoxLayout *displayLayout = new QHBoxLayout;
     switch(newField.getType()){
-    case(DataType::Text):
-        displayWidgetPointer= new DisplayWidgetText(newField, Edit);
-        break;
-    case(DataType::LongText):
-        displayWidgetPointer= new DisplayWidgetLongText(newField, Edit);
-        break;
-    case(DataType::Image):
-        displayWidgetPointer=new DisplayWidgetImage(newField, Edit);
-        break;
-    case(DataType::Images):
-        displayWidgetPointer=new DisplayWidgetImages(newField, Edit);
-        break;
+        case(DataType::Text):
+            displayWidgetPointer= new DisplayWidgetText(newField, Edit);
+            break;
+        case(DataType::LongText):
+            displayWidgetPointer= new DisplayWidgetLongText(newField, Edit);
+            break;
+        case(DataType::Image):
+            displayWidgetPointer=new DisplayWidgetImage(newField, Edit);
+            break;
+        case(DataType::Images):
+            displayWidgetPointer=new DisplayWidgetImages(newField, Edit);
+            break;
+        case(DataType::MultipleChoice):
+            qDebug()<<newField.getComments();
+            displayWidgetPointer=new DisplayWidgetMultipleChoice(newField, Edit);
+            break;
     }
     displayLayout->addWidget(displayWidgetPointer);
     this->setLayout(displayLayout);

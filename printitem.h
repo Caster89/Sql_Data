@@ -9,6 +9,7 @@
 #include <QToolBox>
 #include "mystackedwidget.h"
 #include <QTextDocument>
+#include "draggablewidget.h"
 //#include "metatypedeclaration.h"
 
 

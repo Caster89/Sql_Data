@@ -73,10 +73,15 @@ bool MySqlTableModel::select()
      */
     while (query.next()){
         num_cols++;
-        MyField temp_vec = MyField(query.value(0).toString(),query.value(1).toString(),DataType::dataType(query.value(2).toInt()),query.value(3).toBool(),query.value(4).toBool(),query.value(5).toInt(),query.value(6).toBool());
+        MyField temp_vec = MyField(query.value("Name").toString(),
+                                   query.value("Table").toString(),
+                                   DataType::dataType(query.value("Type").toInt()),
+                                   query.value("Vis_Preview").toBool(),
+                                   query.value("Vis_Table").toBool(),
+                                   query.value("Position").toInt(),
+                                   query.value("Primary").toBool(),
+                                   query.value("Comments").toString());
         Fields.append(temp_vec);
-
-
 
     }
 

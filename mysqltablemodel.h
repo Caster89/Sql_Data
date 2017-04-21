@@ -29,8 +29,7 @@ public:
     };*/
     const QVector<QString> Disp = { "DisplayRole", "DecorationRole", "EditRole", "ToolTipRole", "StatusTipRole", "WhatsThisRole", "FontRole", "TextAlignmentRole", "BackgroundRole", "ForegroundRole", "CheckStateRole", "AccessibleTextRole", "AccessibleDescriptionRole", "SizeHintRole", "InitialSortOrderRole" };
 
-    MySqlTableModel(QWidget *parent, QSqlDatabase newDB);
-
+    MySqlTableModel(QWidget *parent = Q_NULLPTR, QSqlDatabase newDB = QSqlDatabase());
     // Loads the necessary data in the model, such as the fields and their table
     bool select();
     //int rowCount (const QModelIndex &parent) const;
@@ -53,10 +52,6 @@ public:
     //bool setHeaderData(int section, Qt::Orientation orientation, const QVariant &value, int role=Qt::EditRole);
     //QVector Values;
     QVector<QSqlRecord > Values;
-
-    //bool insertRow(int row, const QModelIndex &parent);
-    //bool insertRows(int row, int count, const QModelIndex &parent);
-    //bool setData(const QModelIndex &index, const QVariant &value, int role);
 
 
 

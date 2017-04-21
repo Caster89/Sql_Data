@@ -9,6 +9,8 @@ enum dataType{
         Image,
         Images,
         Static,
+        Combined,
+        MultipleChoice,
         Other,
     };
 }

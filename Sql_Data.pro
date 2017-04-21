@@ -42,7 +42,10 @@ SOURCES += main.cpp\
     displaywidget.cpp \
     myprintlist.cpp \
     dragscrollarea.cpp\
-    printitemstatic.cpp
+    printitemstatic.cpp \
+    printitemcombined.cpp \
+    draggablewidget.cpp \
+    displaywidgetmultiplechoice.cpp
 
 HEADERS  += mainwindow.h \
     modifydialog.h \
@@ -73,7 +76,10 @@ HEADERS  += mainwindow.h \
     displaywidget.h \
     myprintlist.h \
     dragscrollarea.h\
-    printitemstatic.h
+    printitemstatic.h \
+    printitemcombined.h \
+    draggablewidget.h \
+    displaywidgetmultiplechoice.h
 
 FORMS    += mainwindow.ui
 

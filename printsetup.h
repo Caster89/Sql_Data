@@ -21,9 +21,11 @@
 #include <QPrintPreviewWidget>
 #include <QPrinter>
 #include <QMap>
+#include <QPdfWriter>
+#include <QDialog>
 
 #include "myprintlist.h"
-class PrintSetup : public QWidget
+class PrintSetup : public QDialog
 {
     Q_OBJECT
 public:
@@ -56,9 +58,12 @@ private:
     QWidget *scrollWidget =new QWidget();
     QVBoxLayout *scrollLayout=new QVBoxLayout();
     QPushButton *btnAddField = new QPushButton("Add Field");
+    QPushButton *btnExport = new QPushButton("Export");
     //QListWidget *printItemList = new QListWidget(this);
 
+    //QPdfWriter *pdfWriter = new QPdfWriter();
     QPrinter *savePrinter = new QPrinter();
+
     QPrinter *previewPrinter = new QPrinter();
 
     void populateSetup();

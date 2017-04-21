@@ -133,36 +133,38 @@ void PrintItemText::alignmentChanged(int align){
     emit itemModified();
 }
 
-//void PrintItemText::paintItem(QTextFrame *frame, QSqlRecord *record){
 void PrintItemText::paintItem(QTextDocument *doc, QTextCursor *cursor, QSqlRecord *record){
     //QTextCursor cursor(doc);
     QTextFrame *topFrame =cursor->currentFrame();
     QTextFrameFormat frameFormat=topFrame->frameFormat();
     cursor->movePosition(QTextCursor::End);
 
-    QTextFrame *frame=cursor->insertFrame(frameFormat);
-
-    qDebug()<<"Printing Record"<<*record;
-    //QTextFrame *topFrame = cursor.currentFrame();
+    //cursor->movePosition(QTextCursor::PreviousBlock);
+    cursor->movePosition(QTextCursor::EndOfBlock);
     QTextBlockFormat blockFormat = cursor->blockFormat();
-
-    QTextCharFormat valueFormat;
-    valueFormat.setFont(valueFont);
+    if (previousLine->isChecked()){
+        cursor->insertText(" ");
+    }else{
+        cursor->insertBlock();
+    }
+    //QTextBlockFormat blockFormat = cursor->blockFormat();
 
     if(titleVisible->isChecked()){
-        qDebug()<<"Title alignment is now:"<<titleAlignment;
         blockFormat.setAlignment(titleAlignment);
         cursor->setBlockFormat(blockFormat);
         QTextCharFormat titleFormat;
         titleFormat.setFont(titleFont);
-        cursor->insertText(QString("%1:").arg(field.getName()),titleFormat);
-        cursor->insertText(" ",valueFormat);
+        cursor->insertText(QString("%1: ").arg(field.getName()),titleFormat);
+        //cursor->insertText(" ",valueFormat);
         if(valueNewLine){
             cursor->insertBlock();
+            blockFormat.setAlignment(alignment);
+            cursor->setBlockFormat(blockFormat);
         }
     }
-    blockFormat.setAlignment(alignment);
-    cursor->setBlockFormat(blockFormat);
+
+    QTextCharFormat valueFormat;
+    valueFormat.setFont(valueFont);
 
     cursor->insertText(record->value(field.getName()).toString(),valueFormat);
 

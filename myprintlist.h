@@ -23,6 +23,7 @@
 #include "dragscrollarea.h"
 #include <QTextDocument>
 #include <QPrinter>
+#include <QPdfWriter>
 
 class MyPrintList : public DragScrollArea
         //QScrollArea
@@ -59,6 +60,8 @@ public slots:
     //void removePrintItem(QWidget *removeWidget);
     void removePrintItem();
     QTextDocument* printRecords(QPrinter *printer);
+    QTextDocument* printRecords(QPdfWriter *printer);
+
 
 private:
     //void clearPrintItems();

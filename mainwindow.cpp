@@ -31,6 +31,7 @@
 #include <QFile>
 #include <QDir>
 #include <QFileInfo>
+#include <QFileDialog>
 #include <QDataWidgetMapper>
 #include <displaywidget.h>
 #include <mysqltablemodel.h>
@@ -93,9 +94,9 @@ MainWindow::MainWindow(QWidget *parent) :
     frmButtons->setLayout(btnLayout);
 
     //The frame for the preview is created
-    QFrame *frmPreview = new QFrame();
-    QVBoxLayout *prwLayout = new QVBoxLayout;
-    QScrollArea *scrPreview = new QScrollArea;
+
+
+
     frmPreview->setLayout(prwLayout);
 
 
@@ -113,8 +114,8 @@ MainWindow::MainWindow(QWidget *parent) :
     mainLayout->addWidget(scrPreview);
 
     //A value is given to the database and a connetion is made using the custom CreatConnection
-    dbName="/Users/Castro/Documents/Svago/Programmazione/Qt/database/movies.sqlite";
-    CreateConnection(dbName); //Go to method, return bool
+    //dbName="/Users/Castro/Documents/Svago/Programmazione/Qt/database/movies.sqlite";
+    //CreateConnection(dbName); //Go to method, return bool
     //QSqlQuery querytest (q.createUpdate("Main_table",Update,Where),db);
 
 
@@ -122,11 +123,11 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //Ther preview frame is populated with the labeled text
     //preview field is enabeled in order to navigate throught he preview fields array
-
+    /*
     for (int i=0;i<prwItems.size();i++){
         //If the field has to be previewed in the preview frame then the field name label is added
         prwLayout->addWidget(prwItems[i]);
-    }
+    }*/
     //The scroll area is set to a fixed width wich allowes to view the whole contents without scrolling to the side
     frmPreview->setMinimumWidth(prwLayout->sizeHint().width());
     scrPreview->setWidget(frmPreview);
@@ -136,7 +137,8 @@ MainWindow::MainWindow(QWidget *parent) :
     qDebug()<<"Main Window Created";
     wdgMain->show();
     qDebug()<<"Main Window Showed";
-
+    createActions();
+    createMenu();
     //The table view signal "current changed" is connected to the slot which changes the selected record
     connect(dbTableView->selectionModel(),SIGNAL(currentChanged(QModelIndex,QModelIndex)),
             SLOT(currentSelectionChanged(const QModelIndex &)));
@@ -149,6 +151,31 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(btnModifyRecord,SIGNAL(clicked()),SLOT(updateRecord()));
     connect(btnPrint,SIGNAL(clicked()),this,SLOT(printRecord()));
 
+}
+
+void MainWindow::createActions(){
+    newAct = new QAction(tr("&New Database"), this);
+    newAct->setShortcuts(QKeySequence::New);
+    newAct->setStatusTip(tr("Create a new database"));
+    connect(newAct, &QAction::triggered, this, &MainWindow::newDB);
+
+    openAct = new QAction(tr("&Open Database"), this);
+    openAct->setShortcuts(QKeySequence::New);
+    openAct->setStatusTip(tr("Open an exising database"));
+    connect(openAct, &QAction::triggered, this, &MainWindow::openDB);
+
+    exportAct = new QAction(tr("&Export Records"), this);
+    exportAct->setShortcuts(QKeySequence::New);
+    exportAct->setStatusTip(tr("Export records as PDF"));
+    connect(exportAct, &QAction::triggered, this, &MainWindow::printRecord);
+
+}
+
+void MainWindow::createMenu(){
+    fileMenu = menuBar()->addMenu(tr("&File"));
+    fileMenu->addAction(newAct);
+    fileMenu->addAction(openAct);
+    fileMenu->addAction(exportAct);
 }
 
 MainWindow::~MainWindow()
@@ -197,8 +224,6 @@ bool MainWindow::CreateConnection(QString dbDir){
 
     //The main table is loaded. It contains all the main data.
 
-
-
     //The table view is prepared by setting the model and other options
 
     dbTableView->setModel(dbmodel);
@@ -217,10 +242,8 @@ bool MainWindow::CreateConnection(QString dbDir){
             dbTableView->hideColumn(n);
         }
         //Each field is checked to see whether it should appear in the preview frame.
-        //If so a label is created and added to the prwFields, ad a blank one is added to prwValues.
         if (dbmodel->getField(n).getVisPreview()){
-            //prwItems.push_back(new DisplayWidget(dbmodel->getField(n).getName(),dbmodel->getField(n).getType(),false));
-            prwItems.push_back(new DisplayWidget(dbmodel->getField(n),false));
+            prwItems.push_back(new DisplayWidget(dbmodel->getField(n),false, frmPreview));
             mapper->addMapping(prwItems.last(),n,"Value");
         }
     }
@@ -232,7 +255,7 @@ bool MainWindow::CreateConnection(QString dbDir){
     dbTableView->setStyleSheet("alternate-background-color:#99DDFF;background-color:white;");
     //sets no triggers to edit the information
     dbTableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    qDebug()<<"EDIT StRATEGY "<<dbmodel->editStrategy();
+    //qDebug()<<"EDIT StRATEGY "<<dbmodel->editStrategy();
     return true;
 
 
@@ -422,3 +445,46 @@ bool MainWindow::updateRecord(){
     modDialog.exec();
     return true;
 }
+
+bool MainWindow::newDB(){
+    return true;
+}
+
+bool MainWindow::openDB(){
+    QString fileName = QFileDialog::getOpenFileName(this,
+        "Open Database", QStandardPaths::displayName(QStandardPaths::DocumentsLocation),
+        "Database Files (*.sqlite)");
+    /*for(int i = 0; i<prwItems.size(); i++){
+        prwLayout->removeWidget(prwItems[i]);
+        prwItems[i]->setParent(NULL);
+        delete prwItems.takeAt(i);
+    }
+    delete dbmodel;
+    //dbTableView->setModel();
+    prwItems.clear();*/
+    dbName=fileName;
+    CreateConnection(dbName); //Go to method, return bool
+    for (int i=0;i<prwItems.size();i++){
+        //If the field has to be previewed in the preview frame then the field name label is added
+        prwLayout->addWidget(prwItems[i]);
+        prwItems[i]->show();
+    }
+    prwLayout->update();
+    frmPreview->update();
+    frmPreview->adjustSize();
+    scrPreview->setFixedWidth(frmPreview->width()+20);
+
+    qDebug()<<"The layout has: "<<prwLayout->count()<<" Widgets";
+
+}
+
+#ifndef QT_NO_CONTEXTMENU
+void MainWindow::contextMenuEvent(QContextMenuEvent *event)
+{
+    QMenu menu(this);
+    //menu.addAction(cutAct);
+    //menu.addAction(copyAct);
+    //menu.addAction(pasteAct);
+    menu.exec(event->globalPos());
+}
+#endif // QT_NO_CONTEXTMENU

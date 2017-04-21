@@ -229,11 +229,15 @@ void PrintItemImages::paintItem(QTextDocument *doc, QTextCursor *cursor, QSqlRec
     QTextFrameFormat frameFormat=topFrame->frameFormat();
     QTextFrame *frame=cursor->insertFrame(frameFormat);
 
+    QPaintDevice *printer=doc->documentLayout()->paintDevice();
+    //QPageSize pageType = QPageSize(doc->pageSize());
+    //QSizeF pageSize = pageType.size();
     QSizeF pageSize = doc->pageSize();
     qDebug()<<"The size of the page "<<pageSize;
-    //qDebug()<<"The size of the page "<<printer->pageRect(QPrinter::DevicePixel);
-    //qDebug()<<"The size of the page "<<printer->pageRect(QPrinter::Millimeter);
-    //qDebug()<<"The size of the page "<<printer->pageRect(QPrinter::Inch);
+    qDebug()<<"The size of the page in px "<<printer->width()<<" x "<<printer->height();
+    qDebug()<<"The size of the page in mm "<<printer->widthMM()<<" x "<<printer->heightMM();
+    qDebug()<<"The size of the page in inch "<<printer->widthMM()/2.5<<" x "<<printer->heightMM()/2.5;
+    qDebug()<<"Pixels Per inch: "<<printer->width()/printer->widthMM()*25;
     //qDebug()<<"Margins"<<printer->margins().left<<printer->margins().right;
     //qDebug()<<"Margins"<<printer->margins().top<<printer->margins().bottom;
 
@@ -283,7 +287,7 @@ void PrintItemImages::paintItem(QTextDocument *doc, QTextCursor *cursor, QSqlRec
                 h = pageSize.height();
 
                 Image = Image.scaled(w,h,Qt::KeepAspectRatio);
-                //qDebug()<<"Width: "<<Image.width()<<"Height: "<<Image.height();
+                qDebug()<<"Width: "<<Image.width()<<"Height: "<<Image.height();
             break;
             }
             //Full Width
@@ -291,21 +295,21 @@ void PrintItemImages::paintItem(QTextDocument *doc, QTextCursor *cursor, QSqlRec
                 w = pageSize.width();
 
                 Image = Image.scaledToWidth(w);
-                //qDebug()<<"Width: "<<Image.width()<<"Height: "<<Image.height();
+                qDebug()<<"Width: "<<Image.width()<<"Height: "<<Image.height();
             break;
             }
             //Num Images
             case(2):{
                 w = (pageSize.width()/ledtNumImages->text().toFloat());
                 Image = Image.scaledToWidth(w);
-                //qDebug()<<"Width: "<<Image.width()<<"Height: "<<Image.height();
+                qDebug()<<"Width: "<<Image.width()<<"Height: "<<Image.height();
             break;
             }
             //Fixed Width
             case(3):{
                 w = ledtImageWidth->text().toFloat();
                 Image = Image.scaledToWidth(w);
-                //qDebug()<<"Width: "<<Image.width()<<"Height: "<<Image.height();
+                qDebug()<<"Width: "<<Image.width()<<"Height: "<<Image.height();
             break;
             }
             //Fixed Width & Height
@@ -313,14 +317,14 @@ void PrintItemImages::paintItem(QTextDocument *doc, QTextCursor *cursor, QSqlRec
                 w = ledtImageWidth->text().toFloat();
                 h = ledtImageHeight->text().toFloat();
                 Image = Image.scaled(w,h,Qt::IgnoreAspectRatio);
-                //qDebug()<<"Width: "<<Image.width()<<"Height: "<<Image.height();
+                qDebug()<<"Width: "<<Image.width()<<"Height: "<<Image.height();
             break;
             }
         }
-        qDebug()<<"Available space before image insertion: "<<avlbSpace;
-        qDebug()<<"Width of the image: "<<w;
-        qDebug()<<"Plannin on inserting the image in: "<<currRow<<" "<<currCol;
-        qDebug()<<"The talbe has size: "<<imageTable->rows()<<" "<<imageTable->columns();
+        //qDebug()<<"Available space before image insertion: "<<avlbSpace;
+        //qDebug()<<"Width of the image: "<<w;
+        //qDebug()<<"Plannin on inserting the image in: "<<currRow<<" "<<currCol;
+        //qDebug()<<"The talbe has size: "<<imageTable->rows()<<" "<<imageTable->columns();
         if(avlbSpace<w){
             qDebug()<<"New rows are needed";
             imageTable->appendRows(1);

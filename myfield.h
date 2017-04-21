@@ -5,6 +5,7 @@
 #include <QString>
 //#include <QVector>
 #include <QVariant>
+#include <QDebug>
 
 class MyField
 {
@@ -12,9 +13,9 @@ public:
     //enum Type{"TEXT","LONG_TEXT","IMAGE","IMAGES"};
     MyField();
 
-    MyField(QString Name, QString Table="Main_table", DataType::dataType Field_Type = DataType::Text, bool Vis_Preview = false, bool Vis_Table = false, int Position = 0, bool Primary = false);
+    MyField(QString Name, QString Table="Main_table", DataType::dataType Field_Type = DataType::Text, bool Vis_Preview = false, bool Vis_Table = false, int Position = 0, bool Primary = false, QString Comments = "");
 
-    MyField(const MyField &orgField);
+    MyField(const MyField &origField);
 
     MyField &operator=(MyField &orgField);
 
@@ -30,6 +31,7 @@ public:
         swap(first.Field_Type,second.Field_Type);
         swap(first.Field_Vis_Preview,second.Field_Vis_Preview);
         swap(first.Field_Table,second.Field_Table);
+        swap(first.Field_Comments, second.Field_Comments);
     }
 
 
@@ -58,10 +60,15 @@ public:
     inline bool getPrimary() const{
         return Field_Primary;
     }
+    inline QString getComments() const{
+        return Field_Comments;
+    }
+
 
 private:
     QString Field_Name;
     QString Field_Table;
+    QString Field_Comments;
     DataType::dataType Field_Type;
     bool Field_Vis_Preview;
     bool Field_Vis_Table;
