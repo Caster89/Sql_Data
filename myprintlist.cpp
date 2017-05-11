@@ -81,7 +81,7 @@ QTextDocument *MyPrintList::printRecords(QPdfWriter* printer){
 }
 
 void MyPrintList::removePrintItem(){
-    qDebug()<<"test";
+
     PrintItem* senderItm = qobject_cast<PrintItem*>(QObject::sender());
     removeWidget(senderItm);
 }

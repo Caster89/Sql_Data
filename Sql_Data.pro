@@ -7,6 +7,7 @@
 QT       += core gui
 QT       += sql
 
+
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 qtHaveModule(printsupport): QT += printsupport
 
@@ -45,7 +46,9 @@ SOURCES += main.cpp\
     printitemstatic.cpp \
     printitemcombined.cpp \
     draggablewidget.cpp \
-    displaywidgetmultiplechoice.cpp
+    displaywidgetmultiplechoice.cpp \
+    editdatabasedialog.cpp \
+    fielditem.cpp
 
 HEADERS  += mainwindow.h \
     modifydialog.h \
@@ -79,7 +82,9 @@ HEADERS  += mainwindow.h \
     printitemstatic.h \
     printitemcombined.h \
     draggablewidget.h \
-    displaywidgetmultiplechoice.h
+    displaywidgetmultiplechoice.h \
+    editdatabasedialog.h \
+    fielditem.h
 
 FORMS    += mainwindow.ui
 

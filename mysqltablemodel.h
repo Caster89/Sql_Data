@@ -9,6 +9,7 @@
 #include <QSqlRecord>
 #include <QSqlQuery>
 #include <QDir>
+#include <QList>
 #include <querygenerator.h>
 #include "myfield.h"
 #include "metatypedeclaration.h"
@@ -62,6 +63,7 @@ public:
         return baseRecord.indexOf(FieldName);
     }
 
+    bool editTableStructure(QList<FieldEdit *> changes);
     //bool submitAll();
     //bool submit();
 
@@ -85,7 +87,7 @@ private:
     QVector<MyField>  Primary_keys;
 
     //This variable is created as a "Driver" to create the sqlqueries
-    QueryGenerator QueryGen=QueryGenerator();
+    //QueryGenerator QueryGen=QueryGenerator();
     /*
      *The following three variables are used in order to keep a buffer for a future
      *record which has to be added. An int whihc sets the position of the current
@@ -106,8 +108,11 @@ private:
     QSqlRecord getPrimary(const QModelIndex &index) const;
     QSqlRecord getPrimary(int row) const;
     bool createDirectory(QSqlRecord newRec);
+    bool createFieldDirectory(MyField newField);
+    bool deleteFieldDirectory(MyField oldField);
+    bool renameFieldDirectory(MyField oldField, MyField newField);
     QString GetDirectory(QSqlRecord newRec, bool relative = true) const;
-    QString GetDirectory(QSqlRecord newRec, MyField field, bool relative = true);
+    QString GetDirectory(QSqlRecord newRec, MyField field, bool relative = true) const;
     bool removeFile(QSqlRecord record, QSqlField field);
     bool insertImages(QString TableName,QSqlRecord Primary_Values,QVector<QSqlRecord> Images);
     bool primaryChange(QSqlRecord oldPrim, QSqlRecord newPrim);

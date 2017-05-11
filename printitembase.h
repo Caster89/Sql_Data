@@ -59,7 +59,7 @@ public:
         return editWidget;
     }
 
-    bool eventFilter(QObject *obj, QEvent *event);
+    //bool eventFilter(QObject *obj, QEvent *event);
 
     void setTitleFont(QFont f);
 
@@ -70,9 +70,9 @@ protected:
     QGroupBox *baseGroup = new QGroupBox();
     QGroupBox *derivedGroup = new QGroupBox();*/
     //col 25B row 6
-    QChar rightTri = QChar(0xB6,0x25);
+//QChar rightTri = QChar(0xB6,0x25);
     //col 25B row C
-    QChar downTri = QChar(0xBC,0x25);
+//QChar downTri = QChar(0xBC,0x25);
     enum imageSize{
         FullPage=0,
         FullWidth,
@@ -87,7 +87,7 @@ protected:
     QFont titleFont;
     bool showTitle;
     bool itemOnNewLine;
-    bool expanded=true;
+    //bool expanded=true;
 
     QStringList fontSize;
     Qt::AlignmentFlag alignment=Qt::AlignLeft;
@@ -96,11 +96,11 @@ protected:
     QMap<int, Qt::AlignmentFlag> *alignMap = new QMap<int, Qt::AlignmentFlag>;
     //The labels for the expanded and closed widget are created
     //and arrow (Up of right) and a label with the name of the field
-    QLabel *lblTitle = new QLabel(this);
+//QLabel *lblTitle = new QLabel(this);
     //QLabel *lblArrow=new QLabel(QChar(9,207));
     //QLabel *lblArrow=new QLabel("q");
-    QLabel *lblArrow = new QLabel(downTri);
-    QLabel *lblClose = new QLabel("X");
+//QLabel *lblArrow = new QLabel(downTri);
+//QLabel *lblClose = new QLabel("X");
 
     //The three basic widgets ar created, a stacked widget
     //to switch between the expanded and the closed widget
@@ -144,8 +144,8 @@ protected:
     QButtonGroup *titleAlignGroup = new QButtonGroup();
 
     void buildWidget();
-    void enterEvent(QEvent * event);
-    void leaveEvent(QEvent * event);
+    //void enterEvent(QEvent * event);
+    //void leaveEvent(QEvent * event);
     QSize sizeHint();
     
 private slots:

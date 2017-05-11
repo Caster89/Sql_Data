@@ -47,7 +47,7 @@ DisplayWidgetImage::~DisplayWidgetImage()
 
 void DisplayWidgetImage::setValue(QVariant newValue){
     value=qvariant_cast<QSqlRecord>(newValue);
-    qDebug()<<"Value se to: "<<value;
+    //qDebug()<<"Value set to: "<<value;
     updateImage();
 
 }
@@ -76,6 +76,7 @@ void DisplayWidgetImage::selectImage(){
     if(filename != ""){
         QFile newFile(filename);
         QFileInfo *newFileInfo = new QFileInfo(newFile);
+        qDebug()<<"DisplayWidgetImage had a filevalue of: "<<value.value("File").toString();
         if(value.value("File").toString()=="" ||value.value("File").isNull()){
             value.setValue("Status","N");
         }else{

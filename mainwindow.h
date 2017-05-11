@@ -31,7 +31,6 @@ public:
     ~MainWindow();
 
 private slots:
-    void currentSelectionChanged(const QModelIndex &);
     void recordDoubleClicked(const QModelIndex index);
     QVector<QVector<QString> > getPrimary();
     //QVector<QVector<QString> > getFields();
@@ -42,6 +41,7 @@ private slots:
     void printRecord();
     bool newDB();
     bool openDB();
+    bool editDB();
     inline void modelHasReset(){
         qDebug()<<"ModelHasReset";
     }
@@ -80,9 +80,20 @@ private:
     QScrollArea *scrPreview = new QScrollArea();
 
     QMenu *fileMenu;
+    QMenu *editMenu;
     QAction *newAct;
     QAction *openAct;
     QAction *exportAct;
+    QAction *editDBAct;
+
+    QPushButton *btnAddRecord = new QPushButton("AddRecord");
+
+    QPushButton *btnRemoveRecord = new QPushButton("Remove Record");
+
+    QPushButton *btnModifyRecord = new QPushButton("Modify Record");
+
+    QPushButton *btnPrint = new QPushButton("Export");
+
 
 protected:
 #ifndef QT_NO_CONTEXTMENU

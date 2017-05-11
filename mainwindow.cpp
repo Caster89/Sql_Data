@@ -5,6 +5,7 @@
 #include "labeledtext.h"
 #include "previewpopup.h"
 #include "mysqltablemodel.h"
+#include "editdatabasedialog.h"
 #include <QWidget>
 #include <QSqlDatabase>
 #include <QSqlTableModel>
@@ -77,14 +78,14 @@ MainWindow::MainWindow(QWidget *parent) :
     frmButtons->setFrameStyle(QFrame::Box | QFrame::Raised);
     frmButtons->setLineWidth(1);
 
-    QPushButton *btnAddRecord = new QPushButton("AddRecord",frmButtons);
-    //QFont btnFont=btnAddRecord->font();
-    //btnFont.setFamily("Computer Modern Roman");
-    //btnFont.setWeight(QFont::Bold);
-    //btnAddRecord->setFont(btnFont);
-    QPushButton *btnRemoveRecord = new QPushButton("Remove Record",frmButtons);
-    QPushButton *btnModifyRecord = new QPushButton("Modify Record",frmButtons);
-    QPushButton *btnPrint = new QPushButton("Export",frmButtons);
+    //QPushButton *btnAddRecord = new QPushButton("AddRecord",frmButtons);
+    btnAddRecord->setEnabled(false);
+    //QPushButton *btnRemoveRecord = new QPushButton("Remove Record",frmButtons);
+    btnRemoveRecord->setEnabled(false);
+    //QPushButton *btnModifyRecord = new QPushButton("Modify Record",frmButtons);
+    btnModifyRecord->setEnabled(false);
+    //QPushButton *btnPrint = new QPushButton("Export",frmButtons);
+    btnPrint->setEnabled(false);
 
     QHBoxLayout *btnLayout = new QHBoxLayout;
     btnLayout->addWidget(btnAddRecord);
@@ -123,25 +124,19 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //Ther preview frame is populated with the labeled text
     //preview field is enabeled in order to navigate throught he preview fields array
-    /*
-    for (int i=0;i<prwItems.size();i++){
-        //If the field has to be previewed in the preview frame then the field name label is added
-        prwLayout->addWidget(prwItems[i]);
-    }*/
+
     //The scroll area is set to a fixed width wich allowes to view the whole contents without scrolling to the side
     frmPreview->setMinimumWidth(prwLayout->sizeHint().width());
     scrPreview->setWidget(frmPreview);
     scrPreview->setFixedWidth(frmPreview->width()+20);
 
     wdgMain->setLayout(mainLayout);
-    qDebug()<<"Main Window Created";
     wdgMain->show();
-    qDebug()<<"Main Window Showed";
     createActions();
     createMenu();
     //The table view signal "current changed" is connected to the slot which changes the selected record
-    connect(dbTableView->selectionModel(),SIGNAL(currentChanged(QModelIndex,QModelIndex)),
-            SLOT(currentSelectionChanged(const QModelIndex &)));
+    //connect(dbTableView->selectionModel(),SIGNAL(currentChanged(QModelIndex,QModelIndex)),
+            //SLOT(currentSelectionChanged(const QModelIndex &)));
     connect(dbTableView,SIGNAL(doubleClicked(QModelIndex)),SLOT(recordDoubleClicked(const QModelIndex)));
     connect(dbmodel, SIGNAL(modelReset()), this, SLOT(modelHasReset()));
     connect(dbmodel, SIGNAL(dataChanged(QModelIndex,QModelIndex,QVector<int>)), this, SLOT(dataChangeEmitted()));
@@ -160,7 +155,7 @@ void MainWindow::createActions(){
     connect(newAct, &QAction::triggered, this, &MainWindow::newDB);
 
     openAct = new QAction(tr("&Open Database"), this);
-    openAct->setShortcuts(QKeySequence::New);
+    openAct->setShortcuts(QKeySequence::Open);
     openAct->setStatusTip(tr("Open an exising database"));
     connect(openAct, &QAction::triggered, this, &MainWindow::openDB);
 
@@ -169,6 +164,11 @@ void MainWindow::createActions(){
     exportAct->setStatusTip(tr("Export records as PDF"));
     connect(exportAct, &QAction::triggered, this, &MainWindow::printRecord);
 
+    editDBAct = new QAction(tr("&Edit Database"), this);
+    //editDBAct->setShortcuts(QKeySequence::New);
+    editDBAct->setStatusTip(tr("Edit database field"));
+    connect(editDBAct, &QAction::triggered, this, &MainWindow::editDB);
+
 }
 
 void MainWindow::createMenu(){
@@ -176,6 +176,11 @@ void MainWindow::createMenu(){
     fileMenu->addAction(newAct);
     fileMenu->addAction(openAct);
     fileMenu->addAction(exportAct);
+    exportAct->setEnabled(false);
+
+    editMenu = menuBar()->addMenu(tr("&Edit"));
+    editMenu->addAction(editDBAct);
+    editDBAct->setEnabled(false);
 }
 
 MainWindow::~MainWindow()
@@ -188,10 +193,8 @@ void MainWindow::printRecord(){
     QModelIndexList selRows = dbTableView->selectionModel()->selectedRows();
     for (int i =0; i<selRows.count();i++){
         printRecords.append(dbmodel->record(selRows[i].row()));
-        qDebug()<<"Record to print: "<<printRecords.last();
     }
 
-    //printRecords.append(dbmodel->record(2));
     PrintSetup *printWidget=new PrintSetup(dbmodel->getFields(),printRecords);
     QWidget *compWidget= new QWidget();
     QHBoxLayout *test =new QHBoxLayout();
@@ -261,23 +264,11 @@ bool MainWindow::CreateConnection(QString dbDir){
 
 }
 
-void MainWindow::currentSelectionChanged(const QModelIndex &index){
-}
+//void MainWindow::currentSelectionChanged(const QModelIndex &index){
+//}
 
 void MainWindow::recordDoubleClicked(const QModelIndex index){
-//    QRect deskRect = QApplication::desktop()->rect();
-//    int wid = QApplication::desktop()->width();
-//    int height = QApplication::desktop()->height();
-//    QPoint curPosition = QCursor::pos();
-//    //curPosition=QWidget::mapFromGlobal(curPosition);
-//    QSqlRecord sel_record = dbmodel->record(index.row());
-//    PreviewPopup *prev = new PreviewPopup(this,sel_record,prwFields, Fields);
-//    prev->setWindowFlags(Qt::Popup);
-//    qDebug()<<"Mouse x:"<<curPosition.x();
-//    qDebug()<<"Mouse y:"<<curPosition.y();
-//    qDebug()<<deskRect.width()<<"x"<<deskRect.height();
-//    //prev->setStyleSheet("background-color:red;");
-//    prev->show();
+    updateRecord();
 }
 
 QVector<QVector<QString> > MainWindow::getPrimary(){
@@ -302,123 +293,7 @@ void MainWindow::createNewRecord(){
     //If the query is accepted
 
     modDialog.exec();
-//    if(querygen.exec()==QDialog::Accepted){
-//        //The inserted values are retreived
-//        QVector<DisplayWidget*>vecValues=querygen.getValues();
-//        //Four vectors are created
-//        //1. hold the values of the primary field for the current record
-//        //2. hold the values for all the fields in the current record
-//        //3. holds the information of the images
-//        //4. used as vector to create the previos two
-//        QVector<QVector<QString> > temp_Primary;
-//        QVector<QVector<QString> > new_values;
-//        QVector<QVector<QVector<QString> > > temp_img;
-//        QVector<QString> temp_value(2);
-//        QVector<QString> genQuery;
 
-
-
-//        //The directory for the new record is created.
-//        //The directory will be used to store all the necessary files
-//        //The name of the record directory is given by it's primary values
-//        QString recordDir = dbName + QDir::separator();
-//        //All the fields are scanned to get the primary ones
-//        for(int n=0;n<Fields.size();n++){
-//            //if(vecValues[n]->getPrimary()==1){
-//                //temp_value[0]=vecValues[n]->getField();
-//                //temp_value[1]=vecValues[n]->getValue();
-//                temp_Primary.append(temp_value);
-//                recordDir += temp_value[1] + "_";
-//            }
-//        }
-//        //Chop removes the last "n" caracters off the end of a String
-//        //in this case the last _
-//        //recordDir.chop(1);
-//        //qDebug()<<recordDir;
-
-
-//        QSqlQuery queryAlreadyExists;
-
-//        queryAlreadyExists.exec(QueryGenerator::createSelect("Main_table",temp_Primary));
-
-//        if(queryAlreadyExists.first()){
-//            //A record already exists with those primary fields
-//            qDebug()<<"\n Name Already Exists "<<queryAlreadyExists.first();
-//        }else{
-
-//        qDebug()<<"Doesn't Exist Yet";
-//        //The current directory of the program is used and the new directory is created
-//        QDir currentDir(QDir::currentPath());
-//        currentDir.mkdir(recordDir);
-//        //The various record values are read and separated on the basis of where they should go
-//        for(int n=0;n<Fields.size();n++){
-
-//            //If the values has to go in the Main table it is added to the record
-//            //if (vecValues[n]->getTable()=="Main_table"){
-//                //temp_value[0]=vecValues[n]->getField();
-//                //If the field is of type image then the file is copied in the main directory
-//                //of the record, and being in the main table it is renamed to the name of the field
-//                //if(vecValues[n]->getType()=="IMAGE"){
-//                    QFileInfo orgImage(vecValues[n]->getValue().toString());
-
-//                    //The file is copied using QFile::copy
-//                    //The main directory  is used, and the name of the field is used, followed by the
-//                    //original suffix
-//                    //QFile::copy(vecValues[n]->getValue().toString(),
-//                      //          QString(recordDir + QDir::separator() + vecValues[n]->getField() +
-//                                        //"." + orgImage.suffix()));
-//                    //temp_value[1]=recordDir + QDir::separator() + vecValues[n]->getField() + "." + orgImage.suffix();
-
-//                }else{
-//                temp_value[1]=vecValues[n]->getValue().toString();
-//                }
-//                new_values.push_back(temp_value);
-//            }
-//         }
-//         //The SQL string is generated
-//         genQuery.append(QueryGenerator::createInsert("Main_table",new_values));
-//         //The values are re-read and all values not to be inserted in the main table
-//         //are added to their appropriate table
-//         //for(int n=0;n<Fields.size();n++){
-//           //  if(vecValues[n]->getTable()!="Main_table"){
-//                 currentDir.mkdir(recordDir+QDir::separator()+vecValues[n]->getField());
-//                 temp_img.clear();
-//             //    temp_img=vecValues[n]->getImage();
-
-
-//                 for(int i=0;i<temp_img.size();i++){
-//                     new_values.clear();
-//                     new_values=temp_img[i];
-
-//                     QFileInfo orgImage(new_values[0][1]);
-
-//                     //new_values[0][1]=QString(recordDir + QDir::separator()
-//                       //                       + vecValues[n]->getField() +
-//                         //                     QDir::separator() + orgImage.fileName());
-//                     new_values.pop_back();
-//                     qDebug()<<new_values.size();
-
-//                     new_values+=temp_Primary;
-//                     //genQuery.append(QueryGenerator::createInsert(vecValues[n]->getTable(),new_values));
-
-//                     qDebug()<<new_values[0][0]<<":"<<new_values[0][1]<<"\n"<<new_values[1][0]<<
-//                                                                                                 ":"<<new_values[1][1]<<"\n"
-//                                                                                                                        <<new_values[2][0]<<":"<<new_values[2][1]<<"\n"                                                                                                                                         <<new_values[3][0]<<":"<<new_values[3][1]<<"\n";
-//                     QFile::copy(orgImage.absoluteFilePath(), new_values[0][1]);
-//                 }
-//              }
-//          }
-//         qDebug()<<"Generated Queries: \n";
-//         for(int i=0;i<genQuery.size();i++){
-//             qDebug()<<genQuery[i]<<"\n";
-//         }
-
-//         QSqlQuery Create_Record;
-//         for(int i=0;i<genQuery.size();i++){
-//             Create_Record.exec(genQuery[i]);
-//         }
-//    }
-//    }
 
 }
 
@@ -451,40 +326,75 @@ bool MainWindow::newDB(){
 }
 
 bool MainWindow::openDB(){
-    QString fileName = QFileDialog::getOpenFileName(this,
-        "Open Database", QStandardPaths::displayName(QStandardPaths::DocumentsLocation),
-        "Database Files (*.sqlite)");
-    /*for(int i = 0; i<prwItems.size(); i++){
-        prwLayout->removeWidget(prwItems[i]);
-        prwItems[i]->setParent(NULL);
-        delete prwItems.takeAt(i);
+    QFileDialog fileDiag(this, "Open Database");
+    fileDiag.setFileMode(QFileDialog::ExistingFile);
+    fileDiag.setNameFilter("Database (*.db *.sql *.sqlite)");
+    fileDiag.setDirectory(QStandardPaths::displayName(QStandardPaths::DocumentsLocation));
+
+    if (!fileDiag.exec()){
+        return false;
+    }
+    QString fileName = fileDiag.selectedFiles().first();
+    foreach(QWidget* currItem, prwItems){
+        prwLayout->removeWidget(currItem);
+        currItem->setParent(NULL);
+        delete currItem;
     }
     delete dbmodel;
     //dbTableView->setModel();
-    prwItems.clear();*/
+    prwItems.clear();
     dbName=fileName;
     CreateConnection(dbName); //Go to method, return bool
-    for (int i=0;i<prwItems.size();i++){
+    //for (int i=0;i<prwItems.size();i++){
+    foreach(QWidget* currItem, prwItems){
         //If the field has to be previewed in the preview frame then the field name label is added
-        prwLayout->addWidget(prwItems[i]);
-        prwItems[i]->show();
+        //prwLayout->addWidget(prwItems[i]);
+        //prwItems[i]->show();
+        prwLayout->addWidget(currItem);
+        currItem->show();
     }
     prwLayout->update();
     frmPreview->update();
     frmPreview->adjustSize();
     scrPreview->setFixedWidth(frmPreview->width()+20);
-
+    btnAddRecord->setEnabled(true);
+    btnRemoveRecord->setEnabled(true);
+    btnModifyRecord->setEnabled(true);
+    btnPrint->setEnabled(true);
+    editDBAct->setEnabled(true);
     qDebug()<<"The layout has: "<<prwLayout->count()<<" Widgets";
 
+}
+
+bool MainWindow::editDB(){
+    //EditDatabaseDialog *editDBDiag = new EditDatabaseDialog(dbmodel->getFields());
+    QVector<MyField> avlbFields = dbmodel->getFields();
+    QList<FieldEdit*> changes = EditDatabaseDialog::editDatabase(avlbFields, this);
+
+
+    qDebug()<<"Got to here with "<<changes.count()<<" changes";
+    dbmodel->editTableStructure(changes);
+    //editDBDiag->show();
+    bool rewrite = false;
+    foreach(FieldEdit *change, changes){
+        qDebug()<<change->getField().getName()<<" majorChange: "<<change->mainEdit();
+        if (change->mainEdit()){
+            rewrite = true;
+            break;
+        }
+    }
+    if (rewrite){
+        QStringList changeCommands = QueryGenerator::multipleChanges("Main_table",changes);
+    }
+
+    return true;
 }
 
 #ifndef QT_NO_CONTEXTMENU
 void MainWindow::contextMenuEvent(QContextMenuEvent *event)
 {
     QMenu menu(this);
-    //menu.addAction(cutAct);
-    //menu.addAction(copyAct);
-    //menu.addAction(pasteAct);
+
     menu.exec(event->globalPos());
 }
 #endif // QT_NO_CONTEXTMENU

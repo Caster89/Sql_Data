@@ -44,7 +44,9 @@ MediaListWidget::MediaListWidget(QWidget *parent, bool setEditable)
     //**********************************************************//
     //addBtnItem = new QListWidgetItem();
     //addItem(addBtnItem);
+    qDebug()<<"itemScale: "<<itemScale<<" itemSize: "<<itemSize<<" complete: "<<itemScale*itemSize*1.5+5;
     this->setMinimumHeight(itemScale*itemSize*1.5+5);
+    //this->setResizeMode(QListView::Adjust);
     //QWidget *addBtnWidget = new QWidget();
 
     //int pushButtonSide=60;

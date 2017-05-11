@@ -44,6 +44,8 @@ public:
 private:
     MediaListWidget *origParent;
     int margin=5;
+    int prefWidth;
+    int prefHeight;
     QPoint posDelete(const QStyleOptionViewItem & option) const;
 
 

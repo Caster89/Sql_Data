@@ -4,6 +4,7 @@
 #include <QDrag>
 #include <QPainter>
 #include "draggablewidget.h"
+#include <QPushButton>
 
 DragScrollArea::DragScrollArea(QWidget *parent) : QScrollArea(parent)
 {
@@ -29,7 +30,6 @@ void DragScrollArea::addWidget(QWidget *newWidget){
     mainLayout->addWidget(newWidget,1);
     mainLayout->addSpacing(2);
     emit itemAdded();
-    qDebug()<<"THe layout has: "<<mainLayout->count()<<" items";
 }
 
 void DragScrollArea::clearArea(){
@@ -62,14 +62,22 @@ void DragScrollArea::removeWidget(QWidget* removeWidget){
     emit itemRemoved();
 }
 
-void DragScrollArea::reorderWidget(QWidget widget, int newPos){
-    int origPos = widgetList.lastIndexOf(&widget);
+void DragScrollArea::reorderWidget(QWidget *widget, int newPos){
+    int origPos = widgetList.lastIndexOf(widget);
+    /*if (newPos >= widgetList.size()){
+        newPos = widgetList.size()-1;
+    }
+
     widgetList.move(origPos,newPos);
     clearArea();
-    repopulateArea();
+    repopulateArea();*/
+    reorderWidget(origPos, newPos);
 }
 
 void DragScrollArea::reorderWidget(int orig, int dest){
+    if (dest>= widgetList.size()){
+        dest = widgetList.size()-1;
+    }
     widgetList.move(orig,dest);
     mainLayout->removeItem(mainLayout->itemAt(2*orig));
     mainLayout->removeItem(mainLayout->itemAt(2*orig));
@@ -125,11 +133,7 @@ void DragScrollArea::mouseMoveEvent(QMouseEvent *event)
     QPixmap *pixmap = new QPixmap(child->size());
     child->render(pixmap);
     QMimeData *mimeData = new QMimeData;
-    /*QByteArray itemData;
-    QDataStream dataStream(&itemData, QIODevice::WriteOnly);
-    dataStream << child <<moveFromPosition;
 
-    mimeData->setData("application/x-dnditemdata", itemData);*/
     QDrag *drag = new QDrag(this);
     drag->setMimeData(mimeData);
     drag->setPixmap(*pixmap);
@@ -145,7 +149,6 @@ void DragScrollArea::dragMoveEvent(QDragMoveEvent *event){
     qDebug()<<"Going to place at "<<positioning;
     if (moveToPosition!=positioning){
         moveToPosition = positioning;
-    //qDebug()<<"Would like ot move to: "<<positioning;
         QSpacerItem *currSpacer;
         for (int i = 0; i<mainLayout->count(); i=i+2){
             currSpacer = (QSpacerItem*)(mainLayout->itemAt(i));
@@ -173,6 +176,7 @@ void DragScrollArea::dropEvent(QDropEvent *event)
         reorderWidget(moveFromPosition,moveToPosition);
         event->setDropAction(Qt::MoveAction);
         event->accept();
+
         // Process the data from the event.
     }else {
         // Ignore the drop.

@@ -19,7 +19,7 @@ class PrintItem : public QWidget
 public:
     PrintItem(MyField newField, QWidget *parent = 0);
 
-    inline QFrame* getWidget(){
+    inline QWidget* getWidget(){
         return printItemPointer;
     }
     void paintItem(QTextDocument *doc, QTextCursor *cursor, QSqlRecord *record){

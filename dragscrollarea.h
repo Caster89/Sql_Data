@@ -11,12 +11,27 @@ class DragScrollArea : public QScrollArea
 {
  Q_OBJECT
 public:
-    DragScrollArea(QWidget *parent);
+    DragScrollArea(QWidget *parent = 0);
     virtual ~DragScrollArea() {};
     void addWidget(QWidget* newWidget);
     void removeWidget(QWidget* removeWidget);
-    void reorderWidget(QWidget widget, int newPos);
+    void reorderWidget(QWidget *widget, int newPos);
     void reorderWidget(int orig, int dest);
+    inline int count(){
+        return widgetList.count();
+    }
+
+    inline QWidget* widgetAt(int pos){
+        return widgetList.at(pos);
+    }
+
+    inline int widgetPosition(QWidget * widget){
+        return widgetList.lastIndexOf(widget);
+    }
+
+    inline QWidget* lastWidget(){
+        return widgetList.last();
+    }
 
 signals:
     void itemAdded();

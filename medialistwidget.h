@@ -43,6 +43,7 @@ public:
 
     inline QSize sizeHint() const{
         //QSize preferredSize = QSize(3*(itemSize+2*itemMargin), 2*itemSize+5);
+        qDebug()<<"Medial List widget is returning a size hint of: "<<3*(itemScale*itemSize+2*itemMargin)<<"x"<<itemScale*itemSize*3/4;
         return QSize(3*(itemScale*itemSize+2*itemMargin),itemScale*itemSize*3/4);
                 //QSize(330, 515);
     }

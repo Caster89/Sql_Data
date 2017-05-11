@@ -80,6 +80,7 @@ bool MySqlTableModel::select()
                                    query.value("Vis_Table").toBool(),
                                    query.value("Position").toInt(),
                                    query.value("Primary").toBool(),
+                                   query.value("Unique").toBool(),
                                    query.value("Comments").toString());
         Fields.append(temp_vec);
 
@@ -119,8 +120,16 @@ QVariant MySqlTableModel::data(const QModelIndex &index, int role) const
         foreignTableQuery.exec(stmt);
         //and the results stored in a vector of QSqlRecords
         QVector<QSqlRecord> returnVector;
+
+        QString baseDir = GetDirectory(getPrimary(index),Fields[index.column()]);
+        baseDir.append(QDir::separator());
+        QSqlRecord currRecord;
+        QString destFile;
         while(foreignTableQuery.next()){
-            returnVector.append(foreignTableQuery.record());
+            destFile = baseDir+foreignTableQuery.record().value("File").toString();
+            currRecord = foreignTableQuery.record();
+            currRecord.setValue("File",destFile);
+            returnVector.append(currRecord);
         }
 
         return QVariant::fromValue(returnVector);
@@ -253,8 +262,8 @@ bool MySqlTableModel::insertRowIntoTable(const QSqlRecord &values,QSqlRecord pri
     //The status of the record is set to old
     rec.setValue("Status","O");
 
-    QString fileDir=copyFile(rec,primaryValues,table);
-    rec.setValue("File",fileDir);
+    QFileInfo fileDir(copyFile(rec,primaryValues,table));
+    rec.setValue("File",fileDir.fileName());
     QString stmt=QueryGenerator::InsertStat(table,rec);
     QSqlQuery query;
     qDebug()<<"The Sql Query is: "<<stmt;
@@ -285,6 +294,7 @@ bool MySqlTableModel::updateRowInTable(int row, const QSqlRecord &values){
     //new record. The new one should be empty if the new records have not been copied
     QSqlRecord origRecord=primaryValues(row);
     QSqlRecord newRec=getPrimary(&rec);
+    qDebug()<<"Did primary change?\n Old: "<<origRecord<<"\n New Record: "<<newRec<<"\n Change: "<<(newRec!=origRecord);
     if(newRec!=origRecord){
         primChanged=true;
         if(!canUpdate(&rec)){
@@ -305,22 +315,28 @@ bool MySqlTableModel::updateRowInTable(int row, const QSqlRecord &values){
             sepRec.append(rec.field(Fields[i].getName()));
             sepRec.setValue(Fields[i].getName(),rec.value(Fields[i].getName()));
             rec.setNull(Fields[i].getName());
+
         }else if(Fields[i].getType()==DataType::Image &&
                 rec.value(rec.indexOf(Fields[i].getName())).isValid() &&
                 !rec.value(rec.indexOf(Fields[i].getName())).isNull()){
-            QSqlRecord currRec=qvariant_cast<QSqlRecord>(rec.value(Fields[i].getName()));
 
+            QSqlRecord currRec=qvariant_cast<QSqlRecord>(rec.value(Fields[i].getName()));
+            qDebug()<<"Adding a single image with status:"<<currRec.value("Status").toString();
+            qDebug()<<currRec.value("File").toString();
             if(currRec.value("Status").toString()=="N"){
-                    QString newFile = currRec.value("File").toString();
-                    QFileInfo *newFileInfo = new QFileInfo(newFile);
-                    rec.replace(
-                            rec.indexOf(Fields[i].getName()),
-                            QSqlField(Fields[i].getName(),QVariant::String)
-                            );
-                    QString destFile = GetDirectory(rec,Fields[i] ) + QDir::separator() + newFileInfo->fileName();
-                    rec.setValue(Fields[i].getName(),destFile);
-                    fileTransfer[newFile] = destFile;
+                qDebug()<<"New Image";
+                QString newFile = currRec.value("File").toString();
+                QFileInfo *newFileInfo = new QFileInfo(newFile);
+                rec.replace(
+                        rec.indexOf(Fields[i].getName()),
+                        QSqlField(Fields[i].getName(),QVariant::String)
+                        );
+                QString destFile = GetDirectory(rec,Fields[i] ) + QDir::separator() + newFileInfo->fileName();
+                destFile.replace(" ","_");
+                rec.setValue(Fields[i].getName(),destFile);
+                fileTransfer[newFile] = destFile;
             }else if(currRec.value("Status").toString()=="M"){
+                qDebug()<<"Modify Image";
                 QString newFile = currRec.value("File").toString();
                 QFileInfo *newFileInfo = new QFileInfo(newFile);
                 rec.replace(
@@ -329,14 +345,17 @@ bool MySqlTableModel::updateRowInTable(int row, const QSqlRecord &values){
                         );
                 QDir destDir = QDir::current();
                 destDir.cd(GetDirectory(rec,Fields[i]));
+                qDebug()<<"Get directory returns"<<GetDirectory(rec,Fields[i]);
+                qDebug()<<"Destination folder for single images is: "<<destDir.absolutePath();
                 QString destFile = GetDirectory(rec,Fields[i] ) + QDir::separator() + newFileInfo->fileName();
-
-
+                destFile.replace(" ","_");
                 rec.setValue(Fields[i].getName(),destFile);
                 fileTransfer[newFile] = destFile;
                 fileDelete = destDir.entryInfoList();
+                //qDebug()<<"Entry info list returns: "<<fileDelete;
 
             }else if(currRec.value("Status").toString()=="R"){
+                qDebug()<<"Remove Image";
                 QDir destDir = QDir::current();
                 destDir.cd(GetDirectory(rec,Fields[i]));
                 fileDelete = destDir.entryInfoList();
@@ -345,6 +364,13 @@ bool MySqlTableModel::updateRowInTable(int row, const QSqlRecord &values){
                         QSqlField(Fields[i].getName(),QVariant::String)
                         );
                 rec.setNull(Fields[i].getName());
+            }else{
+                QString fileName = currRec.value("File").toString();
+                rec.replace(
+                        rec.indexOf(Fields[i].getName()),
+                        QSqlField(Fields[i].getName(),QVariant::String)
+                        );
+                rec.setValue(rec.indexOf(Fields[i].getName()),fileName);
             }
         }
 
@@ -358,6 +384,7 @@ bool MySqlTableModel::updateRowInTable(int row, const QSqlRecord &values){
     {
     QFileInfoList::const_iterator i = fileDelete.constBegin();
     while (i != fileDelete.constEnd()) {
+        qDebug()<<"Deleting: "<<i->absoluteFilePath();
         QFile delFile(i->absoluteFilePath());
         delFile.remove();
         ++i;
@@ -367,8 +394,11 @@ bool MySqlTableModel::updateRowInTable(int row, const QSqlRecord &values){
     {
     QMap<QString, QString>::const_iterator i = fileTransfer.constBegin();
     while (i != fileTransfer.constEnd()) {
+        qDebug()<<"Copying: "<<i.key()<<" to: "<<i.value();
         QFile origFile(i.key());
-        origFile.copy(i.value());
+        bool succ = origFile.copy(i.value());
+        qDebug()<<"Was successfull: "<<succ;
+        qDebug()<<origFile.errorString();
         ++i;
     }
     }
@@ -378,18 +408,17 @@ bool MySqlTableModel::updateRowInTable(int row, const QSqlRecord &values){
     for(int i=0;i<sepRec.count();i++){
         QString tableName=sepRec.fieldName(i);
         QVector<QSqlRecord>  fileList=qvariant_cast<QVector<QSqlRecord> >(sepRec.value(i));
+        qDebug()<<"The images list has "<<fileList.size()<<" entries";
         for(int n=0;n<fileList.size();n++){
             QSqlRecord currRecord=fileList[n];
-            //QSqlRecord currRecord=separateDir(fileList[n]);
-            //qDebug()<<"Current list: "<<fileList[n];
-            //qDebug()<<"Corrected record: "<<currRecord;
+            qDebug()<<"Current images record: \n"<<currRecord;
             if(currRecord.value("Status").toString()=="N"){
-                currRecord=separateDir(currRecord);
+                //currRecord=separateDir(currRecord);
                 insertRowIntoTable(fileList[n],origRecord,tableName);
             }else if(currRecord.value("Status").toString()=="R"){
                 deleteFromTable(currRecord,tableName);
             }else if (currRecord.value("Status").toString()=="M"){
-                //qDebug()<<"***********************\n You chose to update the a value, in particulare:\n"<<newRec<<"\n Using these new Values:\n"<<currRecord<<"\n in the following table: "<<tableName;
+                qDebug()<<"***********************\n You chose to update the a value, in particulare:\n"<<newRec<<"\n Using these new Values:\n"<<currRecord<<"\n in the following table: "<<tableName;
                 updateRowInTable(currRecord,newRec,tableName);
             }
         }
@@ -409,14 +438,17 @@ bool MySqlTableModel::updateRowInTable(int row, const QSqlRecord &values){
 bool MySqlTableModel::updateRowInTable(const QSqlRecord &values,QSqlRecord primaryValues,QString table){
     qDebug()<<"///////////Calling updateRowInTable (overloaded)///////////";
     QSqlRecord rec=values;
+
     QSqlRecord whereValues=QSqlRecord();
     whereValues.append(values.field("File"));
-    whereValues.append(values.field("Directory"));
-    whereValues.setValue("File",values.value("File"));
-    whereValues.setValue("Directory",values.value("Directory"));
+    //whereValues.append(values.field("Directory"));
+    QFileInfo fileName(values.value("File").toString());
+    whereValues.setValue("File",fileName.fileName());
+    rec.setValue("File", fileName.fileName());
+    //whereValues.setValue("Directory",values.value("Directory"));
     for(int i=0;i<primaryValues.count();++i){
-        rec.insert(i,primaryValues.field(i));
-        rec.setValue(i,primaryValues.value(i));
+        whereValues.insert(i,primaryValues.field(i));
+        whereValues.setValue(i,primaryValues.value(i));
     }
     rec.setValue("Status","O");
 
@@ -424,8 +456,11 @@ bool MySqlTableModel::updateRowInTable(const QSqlRecord &values,QSqlRecord prima
     QString whereStmt=QueryGenerator::WhereStat(whereValues);
     stmt.append(" ");
     stmt.append(whereStmt);
+    qDebug()<<"*****************\n The following statement was used to update Images\n"<<stmt;
     QSqlQuery query;
-    query.exec(stmt);
+    //query.exec(stmt);
+    qDebug()<<"It succeded: "<<query.exec(stmt);
+    qDebug()<<"******************";
     return true;
 }
 //*****************************************************************//
@@ -437,7 +472,9 @@ bool MySqlTableModel::primaryChange(QSqlRecord oldPrim, QSqlRecord newPrim){
     QString newDir=GetDirectory(newPrim);
 
     //The directory is renamed from the old to the new
-    QDir renameDir=QDir(oldDir);
+    QDir renameDir;
+            //=QDir(oldDir);
+
     qDebug()<<"The old directory is: "<<oldDir<<"\n The new directory is: "<<newDir;
     qDebug()<<"Renaming was successful: "<<renameDir.rename(oldDir,newDir);
 
@@ -495,7 +532,9 @@ bool MySqlTableModel::deleteRowFromTable(int row){
 
 bool MySqlTableModel::deleteFromTable(const QSqlRecord &values, QString tableName){
     qDebug()<<"///////////Calling deleteRowFromTable (overloaded)///////////";
-    QString fileDir=values.value("Directory").toString();
+    QString fileDir=GetDirectory(values,MyField(tableName));
+            //values.value("Directory").toString();
+    fileDir.append(QDir::separator());
     fileDir.append(values.value("File").toString());
     QFile fileToDel(fileDir);
     qDebug()<<"deleting file"<<fileDir;
@@ -515,32 +554,28 @@ bool MySqlTableModel::deleteFromTable(const QSqlRecord &values, QString tableNam
 }
 
 QString MySqlTableModel::copyFile(const QSqlRecord &record,QSqlRecord primaryValues, QString table){
-    QString path= QDir::currentPath();
+    QString path = GetDirectory(primaryValues,MyField(table));
+    //QString path= QDir::currentPath();
             //baseDirectory.absolutePath();
     //QString path
+    //path.append(QDir::separator());
+
+    //for(int i=0;i<primaryValues.count();++i){
+        //path.append(primaryValues.value(i).toString());
+        //path.append('_');
+    //}
+    //path.chop(1);
+    //path.append(QDir::separator());
+    //path.append(table);
     path.append(QDir::separator());
 
-    for(int i=0;i<primaryValues.count();++i){
-        path.append(primaryValues.value(i).toString());
-        path.append('_');
-    }
-    path.chop(1);
-    path.append(QDir::separator());
-    path.append(table);
-    path.append(QDir::separator());
     //at this point the path is /PrimField1_PrimField2_..._PrimFieldN/Table/
     //QString origFile = values.value("Directory").toString()+QDir::separator();
     QFileInfo origFileInfo(record.value("File").toString());
     path.append(origFileInfo.fileName());
+    path.replace(" ","_");
     QFile origFile(record.value("File").toString());
     if(origFile.copy(path)){
-        //QString returnPath= "";
-        //for(int i=0;i<primaryValues.count();++i){
-            //returnPath.append(primaryValues.value(i).toString());
-            //returnPath.append('_');
-        //}
-        //returnPath += QDir::separator() + origFileInfo.fileName();
-
         return QDir::current().relativeFilePath(path);
     }
     return "";
@@ -636,19 +671,21 @@ bool MySqlTableModel::createDirectory(QSqlRecord newRec){
    QString createDir="";
 
    QSqlRecord primValues=getPrimary(&newRec);
-   for(int i=0;i<primValues.count();++i){
+   createDir = GetDirectory(primValues);
+   /*for(int i=0;i<primValues.count();++i){
        createDir.append(primValues.value(i).toString());
        createDir.append('_');
    }
-   createDir.chop(1);
+   createDir.chop(1);*/
    if(!baseDir.mkdir(createDir))
        return false;
    QString addDir;
    for(int i=0;i<Fields.size();++i){
        if(Fields[i].getTable()!="Main_table" || Fields[i].getType()==DataType::Image){
-           addDir=createDir;
-           addDir.append(QDir::separator());
-           addDir.append(Fields[i].getName());
+           //addDir=createDir;
+           //addDir.append(QDir::separator());
+           //addDir.append(Fields[i].getName());
+           addDir = GetDirectory(primValues,Fields[i]);
            if(!baseDir.mkdir(addDir)){
                deleteRecordDirectory(newRec);
                return false;
@@ -706,6 +743,8 @@ QSqlRecord MySqlTableModel::separateDir(QSqlRecord altRecord){
 
 }
 
+//MUST BE CHANGED TO INCLUDE THE UNDERSCORES CORRECTLY//
+//WORKS ONLY IF RELATIVE
 QString MySqlTableModel::GetDirectory(QSqlRecord newRec, bool relative) const{
     QString newDir;
     if(relative){
@@ -722,15 +761,16 @@ QString MySqlTableModel::GetDirectory(QSqlRecord newRec, bool relative) const{
         newDir.append('_');
     }
     newDir.chop(1);
-
+    newDir.replace(" ","_");
     return newDir;
 
 }
 
-QString MySqlTableModel::GetDirectory(QSqlRecord Rec,MyField field, bool relative){
+QString MySqlTableModel::GetDirectory(QSqlRecord Rec,MyField field, bool relative) const{
     QString baseDir= GetDirectory(Rec, relative);
     baseDir.append(QDir::separator());
     baseDir.append(field.getName());
+    baseDir.replace(" ","_");
     return baseDir;
 }
 
@@ -760,7 +800,7 @@ bool MySqlTableModel::insertImages(QString TableName, QSqlRecord Primary_Values,
             QFileInfo orgImage = QFileInfo(currImage.value("File").toString());
             QFile::copy(orgImage.absoluteFilePath(),QString(workDir+QDir::separator()+orgImage.fileName()));
             currImage.setValue("File",orgImage.fileName());
-            QString addQuery=QueryGen.InsertStat(TableName,currImage);
+            QString addQuery=QueryGenerator::InsertStat(TableName,currImage);
         } else if (currImage.value("Status").toString()=="R"){            
             QString Filepath=GetDirectory(Primary_Values);
             Filepath.append(currImage.value("File").toString());
@@ -772,6 +812,117 @@ bool MySqlTableModel::insertImages(QString TableName, QSqlRecord Primary_Values,
     return true;
 }
 
+bool MySqlTableModel::editTableStructure(QList<FieldEdit*> changes){
 
+    if (changes.isEmpty())
+        return true;
+    QStringList changeCommands;
+    bool rewrite = false;
+    foreach(FieldEdit *change, changes){
+        if (change->mainEdit()){
+            rewrite = true;
+            break;
+        }
+    }
+    if (rewrite){
+        changeCommands.append(QueryGenerator::multipleChanges("Main_table",changes));
+    }else{
+        foreach (FieldEdit *change, changes){
+            changeCommands.append(QueryGenerator::editField(*change));
+        }
+    }
+    QSqlQuery query;
+    bool success = true;
+    qDebug()<<"Running editing Commands";
+    //QFile dbFile = Database.databaseName();
+    //QFile dbBckup("db_backup.sqlite");
+    //dbFile.copy(dbBckup);
+    foreach (QString command, changeCommands){
+        qDebug()<<command;
+        success = (success && query.exec(command));
+        qDebug()<<"Was executed succesfully"<<success;
+        if (!success){
+            qDebug()<<query.lastError();
+        }
+    }
+    if (success){
+       //dbBckup.remove();
+        if(rewrite){
+            foreach(FieldEdit *change, changes){
+            //The field has been removed and is a field which requires directories
+                if (change->getAction()=="Remove" &&
+                        (change->getOldField().getType()==DataType::Images ||change->getOldField().getType()==DataType::Image )){
+                    deleteFieldDirectory(change->getOldField());
+            //The field has been added and is a field which requires directories
+                }else if (change->getAction()=="New" &&
+                          (change->getField().getType()==DataType::Images ||change->getField().getType()==DataType::Image )){
+                    createFieldDirectory(change->getField());
+                //The field has been edited
+                }else if(change->getAction()=="Edit"){
+                    //It used to require directories and still does
+                    if (change->getField().getType()==DataType::Images && change->getOldField().getType()==DataType::Images){
+                        renameFieldDirectory(change->getOldField(),change->getField());
+                    //It didn't use to require directories but now it does
+                    }else if(change->getField().getType()==DataType::Images && change->getOldField().getType()!=DataType::Images){
+                        createFieldDirectory(change->getField());
+                    //It used to require directories but now it doesn't anymore
+                    }else if(change->getField().getType()!=DataType::Images && change->getOldField().getType()==DataType::Images){
+                        deleteFieldDirectory(change->getOldField());
+                    }
+                }
+            }
+        }
+    }else{
+        //should cose db and reload the old one;
+        return false;
+    }
 
+    return true;
+}
 
+bool MySqlTableModel::createFieldDirectory(MyField newField){
+    QDir currDir = QDir::current();
+    QSqlRecord currRecord;
+    while(canFetchMore()){
+        fetchMore();
+    }
+    for (int i =0; i < rowCount();i++){
+        currRecord = record(i);
+        QString fieldDir = GetDirectory(currRecord,newField,true);
+        qDebug()<<"Making: "<<fieldDir;
+        //currDir.mkdir(fieldDir);
+    }
+
+}
+
+bool MySqlTableModel::deleteFieldDirectory(MyField oldField){
+    QDir currDir = QDir::current();
+    QDir deleteDir;
+    QSqlRecord currRecord;
+    while(canFetchMore()){
+        fetchMore();
+    }
+    for (int i =0; i < rowCount();i++){
+        deleteDir = currDir;
+        currRecord = record(i);
+        QString fieldDir = GetDirectory(currRecord,oldField,true);
+        deleteDir.cd(fieldDir);
+        qDebug()<<"Deleting: "<<deleteDir.absolutePath();
+        //deleteDir.removeRecursively();
+    }
+}
+
+bool MySqlTableModel::renameFieldDirectory(MyField oldField, MyField newField){
+    QDir currDir = QDir::current();
+    QSqlRecord currRecord;
+    while(canFetchMore()){
+        fetchMore();
+    }
+    for (int i =0; i < rowCount();i++){
+        currRecord = record(i);
+        QString oldDir = GetDirectory(currRecord,oldField,true);
+        QString newDir = GetDirectory(currRecord,newField,true);
+        qDebug()<<"Renaming: "<<oldDir<<" to: "<<newDir;
+        //currDir.rename(oldDir,newDir);
+    }
+}

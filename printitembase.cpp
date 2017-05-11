@@ -41,10 +41,11 @@ void PrintItemBase::buildWidget(){
     alignMap->insert(3,Qt::AlignJustify);
 
     //Set the style of the frame
-    setFrameShadow(QFrame::Raised);
-    setFrameShape(QFrame::StyledPanel);
+//setFrameShadow(QFrame::Raised);
+//setFrameShape(QFrame::StyledPanel);
 
     //edit layout is the main layout where everything else is incorporated
+
     editLayout->setContentsMargins(1,1,1,1);
     editLayout->setMargin(1);
     editLayout->setSpacing(1);
@@ -62,6 +63,7 @@ void PrintItemBase::buildWidget(){
     //to expand and contract the widget
     // _______________________________________
     //|_|>_________________________________X__|
+/*
     QHBoxLayout *arrowLayout=new QHBoxLayout();
     QFont arrowFont("Wingdings 3");
     lblArrow->setFont(arrowFont);
@@ -77,7 +79,7 @@ void PrintItemBase::buildWidget(){
     arrowLayout->setSpacing(1);
     arrowLayout->setContentsMargins(1,1,1,1);
     arrowLayout->setSizeConstraint(QLayout::SetMaximumSize);
-
+*/
     //The titleBox and Value box are the two groupboxed where the configuration
     //for the setup of the Field name and it's value are placed
     titleBox->setTitle("Field Name");
@@ -162,17 +164,21 @@ void PrintItemBase::buildWidget(){
     connect(previousLine, SIGNAL(stateChanged(int)), this, SLOT(positioningChanged()));
 
     //The title box and value box are added to the boxLayout
+
     boxLayout->addWidget(previousLine);
+    boxLayout->addSpacing(10);
     boxLayout->addWidget(titleBox);
+    boxLayout->addSpacing(10);
     boxLayout->addWidget(valueBox);
 
     QFrame *lineFrame=new QFrame();
     lineFrame->setFrameShape(QFrame::HLine);
     //The editLayout is populated
-    editLayout->addWidget(lineFrame);
-    editLayout->addLayout(arrowLayout);
-    editLayout->addLayout(boxLayout);
-    setLayout(editLayout);
+//editLayout->addWidget(lineFrame);
+//editLayout->addLayout(arrowLayout);
+//editLayout->addLayout(boxLayout);
+//setLayout(editLayout);
+    setMainLayout(boxLayout);
     setSizePolicy(QSizePolicy::Maximum,QSizePolicy::Maximum);
 
 
@@ -243,7 +249,7 @@ void PrintItemBase::titleFontChanged(){
 
 }
 
-
+/*
 bool PrintItemBase::eventFilter(QObject *obj, QEvent *event){
 
     if(obj==lblArrow && event->type()==QEvent::MouseButtonRelease){
@@ -279,7 +285,7 @@ void PrintItemBase::leaveEvent(QEvent *event){
     lblClose->setVisible(false);
     QWidget::leaveEvent(event);
 }
-
+*/
 QSize PrintItemBase::sizeHint(){
     QSize retSize=QWidget::sizeHint();
     retSize.setWidth(qMax(valueBox->width()+titleBox->width()+10, this->parentWidget()->width()));

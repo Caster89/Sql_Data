@@ -30,6 +30,8 @@ ImageItemDelegate::ImageItemDelegate(MediaListWidget *parent)
     origParent=parent;
     imageSize = origParent->getItemSize();
     imageScale = origParent->getItemScale();
+    qDebug()<<"image size in delegate: "<<imageSize;
+    qDebug()<<"image scale in delegate: "<<imageScale;
     connect(origParent, SIGNAL(imageScaleChanged()), this, SLOT(imageScaleChanged()));
 
 }
@@ -81,11 +83,15 @@ void ImageItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
         //int width=imageSize;
         //int height = avlbSpace.height();
         //Image=Image.scaledToHeight(0.7*height);
-        QPixmap scaledImage  = Image.scaled(imageSize*imageScale, imageSize*imageScale, Qt::KeepAspectRatio);
+        QPixmap scaledImage  = Image.scaledToHeight(imageSize*imageScale);
+        qDebug()<<"ItemDelegate paint sets image to size: "<<scaledImage.size();
+                //Image.scaled(imageSize*imageScale, imageSize*imageScale, Qt::KeepAspectRatio);
         int width=scaledImage.width()+2*margin;
         int height = 1.5*scaledImage.height()+4;
+
         //int margin = (width-Image.width())/2;
-        QPoint imgTopLeft = QPoint(topLeft.x()+margin+(imageSize-scaledImage.width())/2,topLeft.y()+2);
+        //QPoint imgTopLeft = QPoint(topLeft.x()+margin+(imageSize-scaledImage.width())/2,topLeft.y()+2);
+        QPoint imgTopLeft = QPoint(topLeft.x()+margin,topLeft.y()+2);
         QPoint txtTopLeft = QPoint(topLeft.x()+1,topLeft.y()+scaledImage.height());
 
         //A QFontMetrics item is initalized in order to determin how the text is going to be split when drawn
@@ -254,7 +260,6 @@ bool ImageItemDelegate::editorEvent(QEvent *event, QAbstractItemModel *model, co
     if(event->type()==QEvent::MouseButtonDblClick){
             ImageWidgetDelegate *editor=new ImageWidgetDelegate(0,index,option, !origParent->isEditable());
             connect(editor,SIGNAL(editingFinished(ImageWidgetDelegate*)),this,SLOT(updateObject(ImageWidgetDelegate*)));
-            //connect(editor,SIGNAL(editingFinished()),this,SLOT(updateObject(editor)));
             editor->setWindowModality(Qt::WindowModal);
             editor->exec();
             return true;
@@ -271,25 +276,14 @@ QSize  ImageItemDelegate::sizeHint(const QStyleOptionViewItem &option,const QMod
 {
     //the option parameter is set to the correct version
     if(index.data(Qt::UserRole).canConvert<QSqlRecord>()){
-        //QSize avlbSpace=origParent->size();
 
-        //QSqlRecord currValue=qvariant_cast<QSqlRecord>(index.data(Qt::UserRole));
-        //QString fileDir=currValue.value("Directory").toString();
-        //fileDir.append(currValue.value("File").toString());
-        //QIcon icnImage(fileDir);
-        //QPixmap Image = icnImage.pixmap(200);
-        //QPixmap Image = qvariant_cast<QPixmap>(index.data(Qt::DecorationRole));
-        //The canvas rectangle is taken fromt the option parameter and it's width and height are saved
-        //QRect avlRect = QRect();
-        //QPoint topLeft = avlRect.topLeft();
-        //int height = avlbSpace.height();
-        //Image=Image.scaledToHeight(height*0.7);
-        //int width=Image.width();
         QPixmap Image = qvariant_cast<QPixmap>(index.data(Qt::DecorationRole));
-        QPixmap scaledImage  = Image.scaled(imageSize*imageScale, imageSize*imageScale, Qt::KeepAspectRatio);
+        QPixmap scaledImage  = Image.scaledToHeight(imageSize*imageScale);
+                //Image.scaled(imageSize*imageScale, imageSize*imageScale, Qt::KeepAspectRatio);
         int width=scaledImage.width()+2*margin;
         int height = 1.5*scaledImage.height()+4;
         QSize preferredSize = QSize(width, height);
+        qDebug()<<"ItemDelegate size hint sets image to size: "<<scaledImage.size();
         return preferredSize;
                 //QSize(imageScale*imageSize+2*margin,imageScale*imageSize*3/2+2);
         //return QSize(width+2*margin,height);
@@ -333,6 +327,7 @@ void ImageItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
 {
     //QString value=static_cast<ImageWidgetDelegate*>(editor)->getText();
     QSqlRecord values=dynamic_cast<ImageWidgetDelegate*>(editor)->getValue();
+    qDebug()<<"Image item delegate is updating the Model data to: "<<values;
     //values.setValue("Description",value);
     model->setData(index, QVariant::fromValue(values), Qt::UserRole);
 }

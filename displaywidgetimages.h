@@ -23,8 +23,8 @@ public:
 
     inline QSize sizeHint() const{
         QSize widgetSize = ImagesDisplay->sizeHint();
-        widgetSize.scale(widgetSize.width()*1,widgetSize.height()*1,Qt::IgnoreAspectRatio);
-    //qDebug()<<"The reccomended size is: "<<widgetSize;
+        widgetSize.scale(widgetSize.width()*1,widgetSize.height()*4,Qt::IgnoreAspectRatio);
+    qDebug()<<"The reccomended size is: "<<widgetSize;
         return widgetSize;
     }
 

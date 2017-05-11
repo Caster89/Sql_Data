@@ -1,3 +1,20 @@
+24-Apr-2017
+Apparently the resolution of the images is not modifiable, so for the time being that option will be
+removed.
+The printing method was modified again in order to minimize the number of new lines.
+Dragging widget and draggable widgets were enabled, now the print items can be re-organized by dragging
+and dropping
+A comments field was added to the fields menu, in particular in order implement the multiple selection
+field.
+The combined field was implemented only as a print item.
+The widget for editing the database is partially implemented. The basic idea is similar to the print item.
+Every subwidget will contain a field with the information needed, it will then return a QMap with two
+values, a string, stating what change should be done (New field, remove field, edit field) and a Qvariant
+containing the data required to implement the change. Appropriate functions were added to the QueryGenerator
+namespace (the class was removed as useless) to insert edit and remove fields.
+This method should be thought out better however.
+A bit of a hack with the DataType namespace, which was re-implemented as struct in order to cast the enum
+
 14-Apr-2017
 Major changes in how the printing is done for the different field type. Added a print preview, and the
 qwidget holding the different elements is now a dragscroll area. Biggest change is the Images item

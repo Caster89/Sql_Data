@@ -4,15 +4,18 @@
 #include <QHBoxLayout>
 #include <QFileDialog>
 #include <QSqlField>
+#include <QGridLayout>
 
 
 DisplayWidgetImages::DisplayWidgetImages(MyField newField, bool editable, QWidget *parent)
     :DisplayWidgetBase(newField,parent)
 {
+    setSizePolicy(QSizePolicy::MinimumExpanding,QSizePolicy::MinimumExpanding);
     editTitle->setText(field.getName()+':');
     nonEditTitle->setText(field.getName()+':');
 
-    QVBoxLayout *editLayout = new QVBoxLayout(editWidget);
+    //QVBoxLayout *editLayout = new QVBoxLayout(editWidget);
+    QGridLayout *editLayout = new QGridLayout();
     QHBoxLayout *btnLayout = new QHBoxLayout();
     QVBoxLayout *nonEditLayout = new QVBoxLayout(nonEditWidget);
 
@@ -87,17 +90,18 @@ DisplayWidgetImages::DisplayWidgetImages(MyField newField, bool editable, QWidge
     //connect(AddImages,SIGNAL(clicked()),this,SLOT(addImages()));
     //connect(RemoveImages,SIGNAL(clicked()),this,SLOT(removeImages()));
 
-    editLayout->addWidget(editTitle);
-    editLayout->addWidget(ImagesEdit);
+    editLayout->addWidget(editTitle,0,0);
+    editLayout->addWidget(ImagesEdit,1,0,4,2);
 
 
     nonEditLayout->addWidget(nonEditTitle);
-    nonEditLayout->addWidget(ImagesDisplay);
+    nonEditLayout->addWidget(ImagesDisplay,1);
 
 
     if(editable){
         setCurrentIndex(Editable);
-        editLayout->addLayout(btnLayout);
+
+        editLayout->addLayout(btnLayout,8,0,1,2);
         connect(btnIncreaseSize, SIGNAL(clicked()), ImagesEdit, SLOT(increaseItemScale()));
         connect(btnDecreaseSize, SIGNAL(clicked()), ImagesEdit, SLOT(decreaseItemScale()));
         connect(btnAddImage, SIGNAL(clicked()), ImagesEdit, SLOT(addNewItem()));
@@ -106,6 +110,7 @@ DisplayWidgetImages::DisplayWidgetImages(MyField newField, bool editable, QWidge
         setCurrentIndex(NonEditable);
         btnAddImage->setVisible(false);
         btnRemoveImage->setVisible(false);
+        nonEditLayout->addSpacing(30);
         nonEditLayout->addLayout(btnLayout);
         connect(btnIncreaseSize, SIGNAL(clicked()), ImagesDisplay, SLOT(increaseItemScale()));
         connect(btnDecreaseSize, SIGNAL(clicked()), ImagesDisplay, SLOT(decreaseItemScale()));
