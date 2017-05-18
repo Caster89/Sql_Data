@@ -42,8 +42,12 @@ PrintItem::PrintItem(MyField newField, QWidget *parent) : QWidget(parent)
     displayLayout->setMargin(1);
     displayLayout->setSpacing(1);
     setLayout(displayLayout);
-    connect(printItemPointer, SIGNAL(closeWidget()),this,SIGNAL(closeWidget()));
+    qDebug()<<"PrinterItem::PrinterItem() connectiong close signals"<<connect(printItemPointer, SIGNAL(closeWidget()),this,SLOT(closeWidgetSlot()));
     connect(printItemPointer, SIGNAL(itemModified()),this, SIGNAL(itemModified()));
 }
 
+void PrintItem::closeWidgetSlot(){
+    qDebug()<<"PrintItem::closeWidgetSlot called";
+    emit closeWidget();
+}
 

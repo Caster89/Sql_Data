@@ -6,6 +6,7 @@
 //#include <QVector>
 #include <QVariant>
 #include <QDebug>
+#include <QSqlRecord>
 
 class MyField
 {
@@ -43,6 +44,7 @@ public:
 
 
 
+    QSqlRecord primaryRecord();
 
     inline QString getName() const{
         return Field_Name;
@@ -107,11 +109,20 @@ public:
         Field_Unique = newUnique;
     }
 
-    inline bool extTable(){
+    inline bool extTable() const{
+        if (Field_Type == DataType::Images)
+            return true;
+        return false;
+    }
+
+    inline bool extDir() const{
         if (Field_Type == DataType::Image ||Field_Type == DataType::Images)
             return true;
         return false;
     }
+
+    QSqlRecord toSqlRecord() const;
+
 
 
 private:

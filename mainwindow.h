@@ -14,6 +14,7 @@
 #include <QDataWidgetMapper>
 #include <QMenu>
 #include <QAction>
+#include <QToolBar>
 #include "myfield.h"
 #include "mysqltablemodel.h"
 //#include "metatypedeclaration.h"
@@ -55,11 +56,47 @@ private slots:
         qDebug()<<"With parent: "<<parent<<"\n first row: "<<first<<"\n last row"<<last;
     }
 
+    inline void nextRecord(){
+        int pos =dbTableView->currentIndex().row();
+        if (pos==0 && dbmodel->rowCount()>1)
+            previousAct->setEnabled(true);
+        pos++;
+        if (pos>=dbmodel->rowCount()){
+            nextAct->setEnabled(false);
+            return;
+        }
+        dbTableView->selectRow(pos);
+        if ((pos+1) >= dbmodel->rowCount()){
+            nextAct->setEnabled(false);
+            return;
+        }
+        return;
+    }
+
+    inline void previousRecord(){
+        int pos =dbTableView->currentIndex().row();
+        if (pos==(dbmodel->rowCount()-1) && dbmodel->rowCount()>1)
+            nextAct->setEnabled(true);
+        pos--;
+        qDebug()<<"movign to "<<pos;
+        if (pos<0){
+            previousAct->setEnabled(false);
+            return;
+        }
+        dbTableView->selectRow(pos);
+        if ((pos-1) < 0){
+            previousAct->setEnabled(false);
+            return;
+        }
+        return;
+    }
+
 
 private:
     Ui::MainWindow *ui;
     void createMenu();
     void createActions();
+
 
     bool CreateConnection(QString dbDir);
 
@@ -81,10 +118,15 @@ private:
 
     QMenu *fileMenu;
     QMenu *editMenu;
+    QToolBar *toolBar = new QToolBar();
     QAction *newAct;
     QAction *openAct;
     QAction *exportAct;
     QAction *editDBAct;
+    QAction *addRowAct;
+    QAction *removeRowAct;
+    QAction *previousAct;
+    QAction *nextAct;
 
     QPushButton *btnAddRecord = new QPushButton("AddRecord");
 

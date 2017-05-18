@@ -38,6 +38,9 @@ public slots:
 private:
     PrintItemBase *printItemPointer=0;
 
+private slots:
+    void closeWidgetSlot();
+
 };
 //Q_DECLARE_METATYPE(PrintItem);
 //Q_DECLARE_METATYPE(QVector<PrintItem>);

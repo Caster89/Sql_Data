@@ -48,7 +48,7 @@ public:
     }
 
 
-        /*foreach(QString key, dataTypeMap.keys()){
+    /*foreach(QString key, dataTypeMap.keys()){
             cmbFieldType->addItem(key, dataTypeMap.value(key));
         }*/
     void setPosition(int i);

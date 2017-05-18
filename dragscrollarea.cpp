@@ -78,7 +78,9 @@ void DragScrollArea::reorderWidget(int orig, int dest){
     if (dest>= widgetList.size()){
         dest = widgetList.size()-1;
     }
+    qDebug()<<"Widget List before:"<<widgetList;
     widgetList.move(orig,dest);
+    qDebug()<<"Widget List after:"<<widgetList;
     mainLayout->removeItem(mainLayout->itemAt(2*orig));
     mainLayout->removeItem(mainLayout->itemAt(2*orig));
 
@@ -173,7 +175,10 @@ void DragScrollArea::dropEvent(QDropEvent *event)
     if (event->source() != this)
         return;
     if (event->proposedAction() == Qt::MoveAction) {
-        reorderWidget(moveFromPosition,moveToPosition);
+        if(moveFromPosition!=moveToPosition){
+            reorderWidget(moveFromPosition,moveToPosition);
+            emit itemMoved();
+        }
         event->setDropAction(Qt::MoveAction);
         event->accept();
 

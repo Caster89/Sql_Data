@@ -155,7 +155,7 @@ private slots:
     void positioningChanged();
 
 signals:
-    void closeWidget();
+    //void closeWidget();
     void itemModified();
 };
 

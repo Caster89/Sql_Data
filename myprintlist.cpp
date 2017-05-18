@@ -1,6 +1,7 @@
 #include "myprintlist.h"
 #include <QScrollArea>
 #include "printitem.h"
+#include "printitembase.h"
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QStringList>
@@ -22,8 +23,10 @@ void MyPrintList::addPrintItem(MyField newField){
 
     printFields.append(newField);
     addWidget(new PrintItem(printFields.last()));
-    connect(widgetList.last(),SIGNAL(closeWidget()),this, SLOT(removePrintItem()));
-    connect(widgetList.last(),SIGNAL(itemModified()), this, SIGNAL(itemModified()));
+    qDebug()<<"MyPrintList::addPrintItem() connecting:"<<connect(lastWidget(),SIGNAL(closeWidget()),this, SLOT(removePrintItem()));
+    connect(lastWidget(),SIGNAL(itemModified()), this, SIGNAL(itemModified()));
+    //connect(widgetList.last(),SIGNAL(closeWidget()),this, SLOT(removePrintItem()));
+    //connect(widgetList.last(),SIGNAL(itemModified()), this, SIGNAL(itemModified()));
     //emit itemAdded();
 
 
@@ -81,7 +84,7 @@ QTextDocument *MyPrintList::printRecords(QPdfWriter* printer){
 }
 
 void MyPrintList::removePrintItem(){
-
+    qDebug()<<"MyPrintList::removePrintItem";
     PrintItem* senderItm = qobject_cast<PrintItem*>(QObject::sender());
     removeWidget(senderItm);
 }

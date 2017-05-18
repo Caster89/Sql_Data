@@ -71,7 +71,7 @@ bool DraggableWidget::eventFilter(QObject *obj, QEvent *event){
 
         return true;
     }else if (obj==lblClose && event->type()==QEvent::MouseButtonRelease){
-        qDebug()<<"Sending close";
+        qDebug()<<"DraggableWidget:closeWidget()";
         emit closeWidget();
     }
 

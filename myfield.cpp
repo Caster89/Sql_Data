@@ -1,11 +1,12 @@
 #include "myfield.h"
 #include <mysqltablemodel.h>
 #include <QString>
+#include <QSqlField>
 
 
 
 MyField::MyField(){
-
+    Field_Table= "Main_table";
 }
 
 MyField::MyField(QString Name, QString Table, DataType::dataType Type, bool Vis_Preview, bool Vis_Table, int Position, bool Primary, bool Unique, QString Comments)
@@ -18,6 +19,34 @@ MyField::MyField(QString Name, QString Table, DataType::dataType Type, bool Vis_
     Field_Pos = Position;
     Field_Primary = Primary;
     Field_Comments = Comments;
+}
+
+QSqlRecord MyField::toSqlRecord() const{
+    QSqlRecord returnRec;
+    returnRec.append(QSqlField("Name",QVariant::String));
+    returnRec.setValue("Name",getName());
+    returnRec.append(QSqlField("Type",QVariant::Int));
+    returnRec.setValue("Type",(int)(getType()));
+    returnRec.append(QSqlField("Table",QVariant::String));
+    returnRec.setValue("Table",getTable());
+    returnRec.append(QSqlField("Vis_Preview",QVariant::Bool));
+    returnRec.setValue("Vis_Preview",getVisPreview());
+    returnRec.append(QSqlField("Vis_Table",QVariant::Bool));
+    returnRec.setValue("Vis_Table",getVisTable());
+    returnRec.append(QSqlField("Position",QVariant::Int));
+    returnRec.setValue("Position",getPos());
+    returnRec.append(QSqlField("Primary",QVariant::Bool));
+    returnRec.setValue("Primary",getPrimary());
+    returnRec.append(QSqlField("Comments",QVariant::String));
+    returnRec.setValue("Comments",getComments());
+    return returnRec;
+}
+
+QSqlRecord MyField::primaryRecord(){
+    QSqlRecord returnRec;
+    returnRec.append(QSqlField("Name",QVariant::String));
+    returnRec.setValue("Name",getName());
+    return returnRec;
 }
 
 bool MyField::operator==(const MyField& other) {

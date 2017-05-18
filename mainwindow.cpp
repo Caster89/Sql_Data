@@ -34,6 +34,7 @@
 #include <QFileInfo>
 #include <QFileDialog>
 #include <QDataWidgetMapper>
+#include <QSqlError>
 #include <displaywidget.h>
 #include <mysqltablemodel.h>
 #include "myfield.h"
@@ -146,33 +147,69 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(btnModifyRecord,SIGNAL(clicked()),SLOT(updateRecord()));
     connect(btnPrint,SIGNAL(clicked()),this,SLOT(printRecord()));
 
+    QDesktopWidget dw;
+    QRect dwRect = dw.availableGeometry(this);
+            //dw.availablegeometry(this);
+
+    resize(dwRect.size()*0.7);
+    //QRect mwRect = this->geometry();
+    move(0.15*dwRect.width(),0.15*dwRect.height());
+
+
 }
 
 void MainWindow::createActions(){
-    newAct = new QAction(tr("&New Database"), this);
+
+    newAct = new QAction(QIcon(":/newDB_icon.png"), tr("&New Database"), this);
     newAct->setShortcuts(QKeySequence::New);
     newAct->setStatusTip(tr("Create a new database"));
     connect(newAct, &QAction::triggered, this, &MainWindow::newDB);
 
-    openAct = new QAction(tr("&Open Database"), this);
+
+    openAct = new QAction(QIcon(":/openDB_icon.png"),
+                          tr("&Open Database"), this);
     openAct->setShortcuts(QKeySequence::Open);
     openAct->setStatusTip(tr("Open an exising database"));
     connect(openAct, &QAction::triggered, this, &MainWindow::openDB);
 
-    exportAct = new QAction(tr("&Export Records"), this);
-    exportAct->setShortcuts(QKeySequence::New);
+    exportAct = new QAction(QIcon(":/DB2PDF_icon.png"),tr("&Export Records"), this);
+
+    exportAct->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_E));
     exportAct->setStatusTip(tr("Export records as PDF"));
     connect(exportAct, &QAction::triggered, this, &MainWindow::printRecord);
 
-    editDBAct = new QAction(tr("&Edit Database"), this);
+    editDBAct = new QAction(QIcon(":/editDB_icon.png"),tr("&Edit Database"), this);
     //editDBAct->setShortcuts(QKeySequence::New);
     editDBAct->setStatusTip(tr("Edit database field"));
     connect(editDBAct, &QAction::triggered, this, &MainWindow::editDB);
+
+    addRowAct = new QAction(QIcon(":/addRow_icon.png"),tr("&Insert new record"), this);
+    //editDBAct->setShortcuts(QKeySequence::New);
+    addRowAct->setStatusTip(tr("Insert a new record in the database"));
+    connect(addRowAct, &QAction::triggered, this, &MainWindow::createNewRecord);
+
+    removeRowAct = new QAction(QIcon(":/removeRow_icon.png"),tr("&Remove selected record"), this);
+    //editDBAct->setShortcuts(QKeySequence::New);
+    removeRowAct->setStatusTip(tr("remove selected record(s) from the database"));
+    connect(removeRowAct, &QAction::triggered, this, &MainWindow::deleteRecord);
+
+    nextAct = new QAction(QIcon(":/next_icon.png"),tr("&Go to next record"), this);
+    //editDBAct->setShortcuts(QKeySequence::New);
+    nextAct->setStatusTip(tr("Move to the following record"));
+    connect(nextAct, &QAction::triggered, this, &MainWindow::nextRecord);
+
+    previousAct = new QAction(QIcon(":/previous_icon.png"),tr("&Go to previous record"), this);
+    //editDBAct->setShortcuts(QKeySequence::New);
+    previousAct->setStatusTip(tr("Move to the previous record"));
+    connect(previousAct, &QAction::triggered, this, &MainWindow::previousRecord);
 
 }
 
 void MainWindow::createMenu(){
     fileMenu = menuBar()->addMenu(tr("&File"));
+    addToolBar(Qt::TopToolBarArea, toolBar);
+    toolBar->setIconSize(QSize(26,26));
+
     fileMenu->addAction(newAct);
     fileMenu->addAction(openAct);
     fileMenu->addAction(exportAct);
@@ -180,7 +217,21 @@ void MainWindow::createMenu(){
 
     editMenu = menuBar()->addMenu(tr("&Edit"));
     editMenu->addAction(editDBAct);
+    editMenu->addAction(addRowAct);
+    editMenu->addAction(removeRowAct);
     editDBAct->setEnabled(false);
+    addRowAct->setEnabled(false);
+    removeRowAct->setEnabled(false);
+
+    toolBar->addAction(newAct);
+    toolBar->addAction(openAct);
+    toolBar->addAction(exportAct);
+    toolBar->addAction(addRowAct);
+    toolBar->addAction(removeRowAct);
+    toolBar->addAction(previousAct);
+    toolBar->addAction(nextAct);
+    previousAct->setEnabled(false);
+    nextAct->setEnabled(false);
 }
 
 MainWindow::~MainWindow()
@@ -322,6 +373,35 @@ bool MainWindow::updateRecord(){
 }
 
 bool MainWindow::newDB(){
+    QFileDialog fileDiag(this, "Open Database");
+    fileDiag.setFileMode(QFileDialog::AnyFile);
+    fileDiag.setDefaultSuffix("sqlite");
+    fileDiag.setDirectory(QStandardPaths::displayName(QStandardPaths::DocumentsLocation));
+    if (!fileDiag.exec()){
+        return false;
+    }
+    QString fileName = fileDiag.selectedFiles().first();
+    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");//not dbConnection
+    db.setDatabaseName(fileName);
+    db.open();
+    QSqlQuery query;
+    query.exec("CREATE TABLE \"Fields_table\" (\"Name\" VARCHAR(20) PRIMARY KEY,"
+               " \"Table\" VARCHAR(20), \"Type\" INT, \"Vis_Preview\" BOOLEAN,"
+               "\"Vis_Table\" BOOLEAN, \"Position\" INT, \"Primary\" BOOLEAN,"
+               "\"Comments\" TEXT) ");
+    QList<FieldEdit*> changes = EditDatabaseDialog::editDatabase(QVector<MyField>(), this);
+    QVector<MyField> fields;
+    QVector<MyField> primaryFields;
+    QStringList extTable;
+    foreach(FieldEdit *currEdit, changes){
+        fields.append(currEdit->getField());
+        if (currEdit->getField().getPrimary())
+            primaryFields.append(currEdit->getField());
+        if (currEdit->getField().extTable())
+            extTable.append(currEdit->getField().getName());
+    }
+
+
     return true;
 }
 
@@ -362,6 +442,12 @@ bool MainWindow::openDB(){
     btnModifyRecord->setEnabled(true);
     btnPrint->setEnabled(true);
     editDBAct->setEnabled(true);
+    exportAct->setEnabled(true);
+    addRowAct->setEnabled(true);
+    removeRowAct->setEnabled(true);
+    //previewsAct->setEnabled(true);
+    nextAct->setEnabled(true);
+    dbTableView->selectRow(0);
     qDebug()<<"The layout has: "<<prwLayout->count()<<" Widgets";
 
 }
@@ -369,14 +455,29 @@ bool MainWindow::openDB(){
 bool MainWindow::editDB(){
     //EditDatabaseDialog *editDBDiag = new EditDatabaseDialog(dbmodel->getFields());
     QVector<MyField> avlbFields = dbmodel->getFields();
+
     QList<FieldEdit*> changes = EditDatabaseDialog::editDatabase(avlbFields, this);
 
 
     qDebug()<<"Got to here with "<<changes.count()<<" changes";
-    dbmodel->editTableStructure(changes);
+    dbmodel->disconnect();
+
+    qDebug()<<"Copy database: ";
+    qDebug()<<QFile::copy(dbName,"db_bckup.sqlite");
+    CreateConnection(dbName);
+    bool success = dbmodel->editTableStructure(changes);
+    if(!success){
+        qDebug()<<"The edit was not successfull:\n "<<dbmodel->lastError();
+        dbmodel->disconnect();
+
+        qDebug()<<"Delete damaged database:"<<QFile::remove(dbName);
+        qDebug()<<"Rename backup"<<QFile::rename("db_bckup.sqlite",dbName);
+        CreateConnection(dbName);
+        return false;
+    }
     //editDBDiag->show();
     bool rewrite = false;
-    foreach(FieldEdit *change, changes){
+    /*foreach(FieldEdit *change, changes){
         qDebug()<<change->getField().getName()<<" majorChange: "<<change->mainEdit();
         if (change->mainEdit()){
             rewrite = true;
@@ -385,8 +486,10 @@ bool MainWindow::editDB(){
     }
     if (rewrite){
         QStringList changeCommands = QueryGenerator::multipleChanges("Main_table",changes);
-    }
-
+    }*/
+    QFile::remove("db_bckup.sqlite");
+    dbmodel->disconnect();
+    CreateConnection(dbName);
     return true;
 }
 

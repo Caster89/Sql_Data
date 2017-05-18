@@ -42,7 +42,8 @@ void EditDatabaseDialog::buildWidget(){
 void EditDatabaseDialog::addNewField(){
     //dragWidget->addWidget(new QPushButton("Button"));
     dragWidget->addWidget(new FieldItem());
-
+    FieldItem *tempReference = (FieldItem*)(dragWidget->lastWidget());
+    tempReference->setPosition(dragWidget->count()-1);
     connect(dragWidget->lastWidget(),SIGNAL(closeWidget()),this, SLOT(removeField()));
     //connect(widgetList.last(),SIGNAL(itemModified()), this, SIGNAL(itemModified()));
 }
@@ -80,10 +81,9 @@ QList<FieldEdit*> EditDatabaseDialog::getChanges(){
 }
 
 void EditDatabaseDialog::resetPositions(){
+    qDebug()<<"Resetting all positions of the field widgets";
     for (int i = 0; i < dragWidget->count(); i++){
-
         dynamic_cast<FieldItem*>(dragWidget->widgetAt(i))->setPosition(i);
-
     }
 }
 

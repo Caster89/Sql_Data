@@ -11,15 +11,17 @@ namespace QueryGenerator
 {
 
     enum Query_Type{SELECT,DELETE,INSERT,UPDATE,CREATETABLE,ALTERTABLE};
-    QString createSelect(QString Table_name,QVector<QVector<QString> > Query_Where);
+    QString SelectWhereStat(QString Table_name, QSqlRecord where_rec, QString comparison = "LIKE");
     QString SelectStat(QString Table_Name, QVector<QString> Columns=QVector<QString>());
     QString InsertStat(QString Table_name, QSqlRecord insert_rec);
     QString UpdateStat(QString Table_name, QSqlRecord update_rec);
-    QString DeleteStat(QString Table_name,QSqlRecord delete_rec);
-    QString WhereStat(QSqlRecord where_rec);
-    QString createDelete(QString Table_name,QVector<QVector<QString> > Query_Where);
-    QString createInsert(QString Table_name,QVector<QVector<QString> > Query_Insert);
-    QString createUpdate(QString Table_name,QVector<QVector<QString> > Query_Upadate, QVector<QVector<QString> > Query_Where);
+    QString DeleteWhereStat(QString Table_name,QSqlRecord delete_rec, QString comparison = "=");
+    QString UpdateFromTable(QString origTable, QString destTable, QVector<MyField> copyRec, QVector<MyField> refRec);
+
+    QString WhereStat(QSqlRecord where_rec, QString comparison = "LIKE");
+    QString Where2TableStat(QString origTable, QString destTable, QVector<MyField> fields);
+    QString InsertStat(QString Table_name, QSqlRecord rec_Insert);
+    QString UpdateWhereStat(QString Table_name, QSqlRecord rec_Update, QSqlRecord rec_Where, QString comparison = "=");
     QString createTable(QString Table_name,QVector<QVector<QString> > Fields_values, QVector<QString> Primary, QVector<QString> Unique=QVector<QString>(0));
     QString createTable(QString Table_name, QVector<MyField> fields);
     QString createExtTable(QString Table_name, QVector<MyField> fields);

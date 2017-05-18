@@ -178,7 +178,8 @@ void PrintItemBase::buildWidget(){
 //editLayout->addLayout(arrowLayout);
 //editLayout->addLayout(boxLayout);
 //setLayout(editLayout);
-    setMainLayout(boxLayout);
+    mainLayout->addLayout(boxLayout);
+    //setMainLayout(boxLayout);
     setSizePolicy(QSizePolicy::Maximum,QSizePolicy::Maximum);
 
 
@@ -286,6 +287,7 @@ void PrintItemBase::leaveEvent(QEvent *event){
     QWidget::leaveEvent(event);
 }
 */
+
 QSize PrintItemBase::sizeHint(){
     QSize retSize=QWidget::sizeHint();
     retSize.setWidth(qMax(valueBox->width()+titleBox->width()+10, this->parentWidget()->width()));

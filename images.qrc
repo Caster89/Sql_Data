@@ -13,6 +13,14 @@
         <file alias="Photo_Not_Avlb">Images/Photo_Not_Available.png</file>
         <file alias="Zoom_in.png">Images/Zoom_in.png</file>
         <file alias="Zoom_out.png">Images/Zoom_out.png</file>
+        <file alias="newDB_icon.png">Images/newDB_icon.png</file>
+        <file alias="openDB_icon.png">Images/DB_open.png</file>
+        <file alias="DB2PDF_icon.png">Images/DB2PDF_icon.png</file>
+        <file alias="editDB_icon.png">Images/editDB_icon.png</file>
+        <file alias="addRow_icon.png">Images/addRow_icon.png</file>
+        <file alias="removeRow_icon.png">Images/removeRow_icon.png</file>
+        <file alias="next_icon.png">Images/next_icon.png</file>
+        <file alias="previous_icon.png">Images/previous_icon.png</file>
     </qresource>
     <qresource prefix="/Fonts">
         <file alias="CMR_Bold.otf">Fonts/ComputerModernRoman-Bold.otf</file>
