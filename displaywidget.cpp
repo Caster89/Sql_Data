@@ -22,6 +22,7 @@
 #include "displaywidgetimage.h"
 #include "displaywidgetimages.h"
 #include "displaywidgettext.h"
+#include "displaywidgetid.h"
 #include "displaywidgetlongtext.h"
 #include "displaywidgetmultiplechoice.h"
 
@@ -30,6 +31,7 @@ DisplayWidget::DisplayWidget(MyField newField, bool Edit,  QWidget *parent) :
     QWidget(parent)
 {
     QHBoxLayout *displayLayout = new QHBoxLayout;
+    qDebug()<<"DisplayWidget::DisplayWidget() field: "<<newField.getName()<<" type: "<<newField.getType();
     switch(newField.getType()){
         case(DataType::Text):
             displayWidgetPointer= new DisplayWidgetText(newField, Edit);
@@ -46,6 +48,10 @@ DisplayWidget::DisplayWidget(MyField newField, bool Edit,  QWidget *parent) :
         case(DataType::MultipleChoice):
             qDebug()<<newField.getComments();
             displayWidgetPointer=new DisplayWidgetMultipleChoice(newField, Edit);
+            break;
+        case(DataType::ID):
+            qDebug()<<newField.getComments();
+            displayWidgetPointer=new DisplayWidgetID(newField, Edit);
             break;
     }
     displayLayout->addWidget(displayWidgetPointer);

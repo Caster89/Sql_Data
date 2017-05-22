@@ -13,8 +13,10 @@ EditDatabaseDialog::EditDatabaseDialog(QVector<MyField> fields, QWidget* parent)
 {
     buildWidget();
     foreach(MyField currField, fields){
-        dragWidget->addWidget(new FieldItem(currField));
-        connect(dragWidget->lastWidget(), SIGNAL(closeWidget()),this, SLOT(removeField()));
+        if (currField.getType()!=DataType::ID){
+            dragWidget->addWidget(new FieldItem(currField));
+            connect(dragWidget->lastWidget(), SIGNAL(closeWidget()),this, SLOT(removeField()));
+        }
     }
 }
 
@@ -83,15 +85,28 @@ QList<FieldEdit*> EditDatabaseDialog::getChanges(){
 void EditDatabaseDialog::resetPositions(){
     qDebug()<<"Resetting all positions of the field widgets";
     for (int i = 0; i < dragWidget->count(); i++){
-        dynamic_cast<FieldItem*>(dragWidget->widgetAt(i))->setPosition(i);
+        dynamic_cast<FieldItem*>(dragWidget->widgetAt(i))->setPosition(i+1);
     }
 }
 
 bool EditDatabaseDialog::valid(){
+    bool uniqueValid = false;
     for (int i = 0; i < dragWidget->count(); i++){
         FieldItem* currCheck = dynamic_cast<FieldItem*>(dragWidget->widgetAt(i));
         qDebug()<<"Field's name: "<<currCheck->getField().getName();
         if (currCheck->getField().getName()=="")
+            return false;
+        if (currCheck->getField().getUnique())
+            uniqueValid = true;
+    }
+    if(!uniqueValid){
+        QMessageBox msgBox;
+        msgBox.setText("Unique field missin");
+        msgBox.setInformativeText("No unique fields are selected, are you sure you want to continue");
+        msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+        msgBox.setDefaultButton(QMessageBox::Ok);
+        msgBox.setIcon(QMessageBox::Critical);
+        if (msgBox.exec() == QMessageBox::Cancel)
             return false;
     }
      return true;

@@ -45,10 +45,9 @@ void PrintItemBase::buildWidget(){
 //setFrameShape(QFrame::StyledPanel);
 
     //edit layout is the main layout where everything else is incorporated
-
-    editLayout->setContentsMargins(1,1,1,1);
-    editLayout->setMargin(1);
-    editLayout->setSpacing(1);
+    //editLayout->setContentsMargins(1,1,1,1);
+    //editLayout->setMargin(1);
+    //editLayout->setSpacing(1);
 
     //By defult the field name is visible
     titleVisible->setChecked(true);
@@ -178,8 +177,8 @@ void PrintItemBase::buildWidget(){
 //editLayout->addLayout(arrowLayout);
 //editLayout->addLayout(boxLayout);
 //setLayout(editLayout);
-    mainLayout->addLayout(boxLayout);
-    //setMainLayout(boxLayout);
+    //mainLayout->addLayout(boxLayout);
+    setMainLayout(boxLayout);
     setSizePolicy(QSizePolicy::Maximum,QSizePolicy::Maximum);
 
 

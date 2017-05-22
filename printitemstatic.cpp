@@ -2,15 +2,25 @@
 #include <QLineEdit>
 #include <QDebug>
 
-PrintItemStatic::PrintItemStatic(MyField newField, QWidget *parent)
-    :PrintItemBase(parent)
+PrintItemStatic::PrintItemStatic()
+    :PrintItemBase()
 {
-    lblTitle->setText("Static Element");
     buildWidget();
-    delete valueBox;
+    //valueSize->addItems(fontSize);
+
+}
+
+
+PrintItemStatic::PrintItemStatic(MyField newfield)
+    :PrintItemBase()
+{
+
+    PrintItemStatic::buildWidget();
+    //valueSize->addItems(fontSize);
 }
 
 void PrintItemStatic::buildWidget(){
+    //boxLayout->addWidget(new QLabel("THIS IS STATIC"));
 
     fontSize<<"8"<<"9"<<"10"<<"11"<<"12"<<"14"<<"16"<<"18"<<"20"<<"22"<<"24"<<"26"<<"28"<<"32"<<"36"<<"38";
     titleSize->addItems(fontSize);
@@ -27,16 +37,16 @@ void PrintItemStatic::buildWidget(){
     cmbStaticElmt->addItem("New Line");
     cmbStaticElmt->addItem("Static Text");
 
-    editLayout->setContentsMargins(1,1,1,1);
-    editLayout->setMargin(1);
-    editLayout->setSpacing(1);
+    //editLayout->setContentsMargins(1,1,1,1);
+    //editLayout->setMargin(1);
+    //editLayout->setSpacing(1);
 
     //titleVisible->setChecked(true);
 
 
     //A basic layout is created to for the arrow and title used
     //to expand and contract the widget
-    QHBoxLayout *arrowLayout=new QHBoxLayout();
+    /*QHBoxLayout *arrowLayout=new QHBoxLayout();
     QFont arrowFont("Wingdings 3");
     lblArrow->setFont(arrowFont);
     lblArrow->installEventFilter(this);
@@ -51,9 +61,11 @@ void PrintItemStatic::buildWidget(){
     arrowLayout->setSpacing(1);
     arrowLayout->setContentsMargins(1,1,1,1);
     arrowLayout->setSizeConstraint(QLayout::SetMaximumSize);
-
+    */
     //The new page widget is empty
+
     mainWidget->addWidget(wdgNewPage);
+
 
     //The new line widget asks how many lines to enter
     QHBoxLayout *newLineLayout = new QHBoxLayout();
@@ -65,10 +77,10 @@ void PrintItemStatic::buildWidget(){
     wdgNewLine->setLayout(newLineLayout);
     mainWidget->addWidget(wdgNewLine);
 
+
     //The static text uses the title widgets to set the text details
     //The buttons for setting B U I are created
     //titleBox->setTitle("Static Text");
-
     QHBoxLayout *hTitleLayoutFont = new QHBoxLayout();
     QHBoxLayout *fontStyleLayout=new QHBoxLayout();
     titleVisible->setVisible(false);
@@ -133,6 +145,7 @@ void PrintItemStatic::buildWidget(){
     //The layout is set for the titlebox
     titleBox->setLayout(titleLayout);
     mainWidget->addWidget(titleBox);
+    mainWidget->setCurrentIndex(0);
     mainWidget->setSizePolicy(QSizePolicy::Maximum,QSizePolicy::Maximum);
     mainWidget->setFixedHeight(mainWidget->currentWidget()->sizeHint().height());
 
@@ -150,14 +163,15 @@ void PrintItemStatic::buildWidget(){
     boxLayout->addWidget(cmbStaticElmt);
     boxLayout->addWidget(mainWidget);
 
-
-    QFrame *lineFrame=new QFrame();
-    lineFrame->setFrameShape(QFrame::HLine);
+    setMainLayout(boxLayout);
+    //setMinimumHeight(200);
+    //QFrame *lineFrame=new QFrame();
+    //lineFrame->setFrameShape(QFrame::HLine);
     //The editLayout is populated
-    editLayout->addWidget(lineFrame);
-    editLayout->addLayout(arrowLayout);
-    editLayout->addLayout(boxLayout);
-    setLayout(editLayout);
+    //editLayout->addWidget(lineFrame);
+    //editLayout->addLayout(arrowLayout);
+    //editLayout->addLayout(boxLayout);
+    //setLayout(editLayout);
     setSizePolicy(QSizePolicy::Maximum,QSizePolicy::Maximum);
 
 

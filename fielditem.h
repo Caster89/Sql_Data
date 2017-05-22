@@ -56,7 +56,7 @@ public:
 private:
     QGridLayout *fieldLayout = new QGridLayout();
     QComboBox  *cmbFieldType = new QComboBox();
-    QCheckBox *ckbFieldPrimary = new QCheckBox("Primary Field");
+    //QCheckBox *ckbFieldPrimary = new QCheckBox("Primary Field");
     QCheckBox *ckbFieldVisTable = new QCheckBox("Visible in Table");
     QCheckBox *ckbFieldVisPreview = new QCheckBox("Visible in Preview");
     QCheckBox *ckbFieldUnique = new QCheckBox("Unique Field");
@@ -86,7 +86,7 @@ private slots:
 
     void typeChanged();
 
-    void principalChanged();
+    //void principalChanged();
 
     void visTableChanged();
 

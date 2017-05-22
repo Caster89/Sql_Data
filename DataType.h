@@ -16,6 +16,7 @@ public:
         Static,
         Combined,
         MultipleChoice,
+        ID,
         Other,
     };
 

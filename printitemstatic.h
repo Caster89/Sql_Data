@@ -13,7 +13,8 @@ class PrintItemStatic : public PrintItemBase
 {
     Q_OBJECT
 public:
-    PrintItemStatic(MyField newField, QWidget *parent = 0);
+    PrintItemStatic();
+    PrintItemStatic(MyField field);
     void paintItem(QTextDocument *doc, QTextCursor *cursor, QSqlRecord *record);
 
 private:

@@ -86,7 +86,8 @@ QSqlRecord ImageWidgetDelegate::getValue(){
 
 void ImageWidgetDelegate::changeDescription(){
     currRecord.setValue("Description",txtLabelEdit->toPlainText());
-    currRecord.setValue("Status","M");
+    if (currRecord.value("Status").toString()!="N")
+        currRecord.setValue("Status","M");
 
 }
 

@@ -2,12 +2,12 @@
 #include <QDebug>
 #include <QPalette>
 
-PrintItemCombined::PrintItemCombined()
+PrintItemCombined::PrintItemCombined() : PrintItemBase()
 {
 
 }
 
-PrintItemCombined::PrintItemCombined(MyField field, QWidget *parent)
+PrintItemCombined::PrintItemCombined(MyField field, QWidget *parent) : PrintItemBase()
 {
     lblTitle->setText("Combined");
     avlbFields = QStringList(field.getTable().split(";"));
@@ -28,16 +28,16 @@ void PrintItemCombined::buildWidget(){
     setFrameShape(QFrame::StyledPanel);
 
 
-    editLayout->setContentsMargins(1,1,1,1);
-    editLayout->setMargin(1);
-    editLayout->setSpacing(1);
+    //editLayout->setContentsMargins(1,1,1,1);
+    //editLayout->setMargin(1);
+    //editLayout->setSpacing(1);
 
     titleVisible->setChecked(true);
 
 
     //A basic layout is created to for the arrow and title used
     //to expand and contract the widget
-    QHBoxLayout *arrowLayout=new QHBoxLayout();
+    /*QHBoxLayout *arrowLayout=new QHBoxLayout();
     QFont arrowFont("Wingdings 3");
     lblArrow->setFont(arrowFont);
     lblArrow->installEventFilter(this);
@@ -52,7 +52,7 @@ void PrintItemCombined::buildWidget(){
     arrowLayout->setSpacing(1);
     arrowLayout->setContentsMargins(1,1,1,1);
     arrowLayout->setSizeConstraint(QLayout::SetMaximumSize);
-
+    */
 
     //The static text uses the title widgets to set the text details
     //The buttons for setting B U I are created
@@ -216,6 +216,9 @@ void PrintItemCombined::buildWidget(){
     valueLayout->addLayout(valueFontStyleLayout);
 
     valueBox->setLayout(valueLayout);
+    boxLayout->addWidget(titleBox);
+    boxLayout->addWidget(valueBox);
+    setMainLayout(boxLayout);
     //mainWidget->addWidget(titleBox);
     //mainWidget->setSizePolicy(QSizePolicy::Maximum,QSizePolicy::Maximum);
     //mainWidget->setFixedHeight(mainWidget->currentWidget()->sizeHint().height());
@@ -231,9 +234,9 @@ void PrintItemCombined::buildWidget(){
     //connect(cmbStaticElmt, SIGNAL(currentIndexChanged(int)), this, SLOT(staticElementChange(int)));
 */
     //The Stacked widget and combobox are added to the boxLayout
-    boxLayout->addWidget(previousLine);
-    boxLayout->addWidget(titleBox);
-    boxLayout->addWidget(valueBox);
+    //boxLayout->addWidget(previousLine);
+    //boxLayout->addWidget(titleBox);
+    //boxLayout->addWidget(valueBox);
     //boxLayout->addWidget(cmbStaticElmt);
     //boxLayout->addWidget(mainWidget);
 
@@ -241,10 +244,12 @@ void PrintItemCombined::buildWidget(){
     QFrame *lineFrame=new QFrame();
     lineFrame->setFrameShape(QFrame::HLine);
     //The editLayout is populated
-    editLayout->addWidget(lineFrame);
-    editLayout->addLayout(arrowLayout);
-    editLayout->addLayout(boxLayout);
-    setLayout(editLayout);
+
+    //editLayout->addWidget(lineFrame);
+    //editLayout->addLayout(arrowLayout);
+    //editLayout->addLayout(boxLayout);
+    //setMainLayout(editLayout);
+    //setLayout(editLayout);
     setSizePolicy(QSizePolicy::Maximum,QSizePolicy::Maximum);
 
 
@@ -256,8 +261,9 @@ void PrintItemCombined::buildWidget(){
     valueFont.setPointSize(valueSize->currentText().toInt());
 
 
-    setLayout(editLayout);
+    //setLayout(editLayout);
     setFixedWidth(320);
+
 
     connect(btnAddField, SIGNAL(clicked(bool)), this, SLOT(addField()));
     connect(btnRemoveField, SIGNAL(clicked(bool)), this, SLOT(removeField()));

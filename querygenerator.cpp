@@ -15,18 +15,64 @@
 /// \param Columns
 /// \return
 ///
-QString QueryGenerator::SelectStat(QString Table_name, QVector<QString> Columns){
+QString QueryGenerator::SelectStat(const QString Table_name, const QSqlRecord *columns){
     QString ReturnString="SELECT";
-    if (Columns.isEmpty()){
+
+    if (columns->isEmpty()){
         ReturnString="SELECT *";
     }else{
-        for(int i=0;i<Columns.size();i++){
-            ReturnString.append(QString(" \"%1\",").arg(Columns[i]));
+        for(int i=0;i<columns->count();i++){
+            ReturnString.append(QString(" \"%1\",").arg(columns->field(i).name()));
         }
         ReturnString.chop(1);
     }
 
     ReturnString.append(QString(" FROM \"%1\"").arg(Table_name));
+    ReturnString.append(";");
+    return ReturnString;
+}
+
+/////////////////////////////////////////////////////////////////////
+/// \brief QueryGenerator::SelectStat
+/// Generates a SQL Select statement
+/// \param Table_name
+/// \param Columns
+/// \return
+///
+QString QueryGenerator::SelectStat(const QString Table_name, const QVector<MyField> Columns){
+    QString ReturnString="SELECT";
+    if (Columns.isEmpty()){
+        ReturnString="SELECT *";
+    }else{
+        for(int i=0;i<Columns.size();i++){
+            ReturnString.append(QString(" \"%1\",").arg(Columns[i].getName()));
+        }
+        ReturnString.chop(1);
+    }
+
+    ReturnString.append(QString(" FROM \"%1\"").arg(Table_name));
+    ReturnString.append(";");
+    return ReturnString;
+}
+
+/////////////////////////////////////////////////////////////////////
+/// \brief QueryGenerator::WhereStat
+/// Generates SQL Where statement
+/// \param where_rec
+/// \param comparison
+/// \return
+///
+QString QueryGenerator::WhereStat(const QSqlRecord *where_rec,const QString comparison){
+    QString ReturnString = "WHERE";
+    QStringList comparisons({"LIKE", "=", "<>", ">", "<", "<="});
+    QString comp = comparison;
+    if (!comparisons.contains(comparison)){
+        comp = "LIKE";
+    }
+    for(int i =0;i<where_rec->count();i++){
+        ReturnString.append(QString(" \"%1\" %3 \'%2\' AND").arg(where_rec->fieldName(i),where_rec->value(i).toString(),comp));
+    }
+    ReturnString.chop(4);
     ReturnString.append(";");
     return ReturnString;
 }
@@ -38,7 +84,7 @@ QString QueryGenerator::SelectStat(QString Table_name, QVector<QString> Columns)
 /// \param delete_rec
 /// \return
 ///
-QString QueryGenerator::DeleteWhereStat(QString Table_name, QSqlRecord delete_rec, QString comparison){
+QString QueryGenerator::DeleteWhereStat(const QString Table_name, const QSqlRecord *delete_rec, const QString comparison){
     QString deleteString = QString("DELETE FROM \"%1\"").arg(Table_name);
     deleteString.append(' ');
     deleteString.append(WhereStat(delete_rec, comparison));
@@ -55,40 +101,18 @@ QString QueryGenerator::DeleteWhereStat(QString Table_name, QSqlRecord delete_re
 /// \param update_rec
 /// \return
 ///
-QString QueryGenerator::UpdateStat(QString Table_name, QSqlRecord update_rec){
+QString QueryGenerator::UpdateStat(const QString Table_name, const QSqlRecord *update_rec){
     QString ReturnString=QString("UPDATE \"%1\" SET").arg(Table_name);
-    for (int i=0;i<update_rec.count();i++){
-        ReturnString.append(QString(" \"%1\" = \'%2\',").arg(update_rec.fieldName(i),update_rec.value(i).toString()));
+    for (int i=0;i<update_rec->count();i++){
+        ReturnString.append(QString(" \"%1\" = \'%2\',").arg(update_rec->fieldName(i),update_rec->value(i).toString()));
     }
     ReturnString.chop(1);
     ReturnString.append(";");
     return ReturnString;
 }
 
-/////////////////////////////////////////////////////////////////////
-/// \brief QueryGenerator::WhereStat
-/// Generates SQL Where statement
-/// \param where_rec
-/// \param comparison
-/// \return
-///
-QString QueryGenerator::WhereStat(QSqlRecord where_rec, QString comparison){
-    QString ReturnString = "WHERE";
-    if (comparison!="LIKE" || comparison!="=" || comparison!="<>" ||
-        comparison!=">" ||comparison!="<" || comparison!="<=" ||
-        comparison!=">="){
-        comparison = "LIKE";
-    }
-    for(int i =0;i<where_rec.count();i++){
-        ReturnString.append(QString(" \"%1\" %3 \'%2\' AND").arg(where_rec.fieldName(i),where_rec.value(i).toString(),comparison));
-    }
-    ReturnString.chop(4);
-    ReturnString.append(";");
-    return ReturnString;
-}
 
-
-QString QueryGenerator::Where2TableStat(QString origTable, QString destTable, QVector<MyField> fields){
+QString QueryGenerator::Where2TableStat(const QString origTable, const QString destTable, const QVector<MyField> fields){
     QString returnStatement = "WHERE ";
     foreach(MyField field, fields ){
         returnStatement.append(QString("\"%1\".\"%3\"=\"%2\".\"%3\" AND ").arg(origTable,destTable, field.getName()));
@@ -104,14 +128,34 @@ QString QueryGenerator::Where2TableStat(QString origTable, QString destTable, QV
 /// \param comparison
 /// \return
 ///
-QString QueryGenerator::SelectWhereStat(QString Table_name, QSqlRecord where_rec, QString comparison){
+QString QueryGenerator::SelectWhereStat(const QString Table_name, const QSqlRecord *where_rec, const QString comparison){
     QString temp_query;
-    temp_query = SelectStat(Table_name, QVector<QString>());
+    temp_query = SelectStat(Table_name);
     temp_query.chop(1);
     temp_query.append(" ");
 
     temp_query.append(WhereStat(where_rec,comparison));
-    temp_query.append(";");
+    qDebug()<<"Select Where Stat: "<<temp_query;
+    //temp_query.append(";");
+    return(temp_query);
+}
+
+/////////////////////////////////////////////////////////////////////
+/// \brief QueryGenerator::SelectWhereStat
+/// \param Table_name
+/// \param Query_Where
+/// \param comparison
+/// \return
+///
+QString QueryGenerator::SelectWhereStat(const QString Table_name, const QSqlRecord *where_rec, const QSqlIndex *selFields, const QString comparison){
+    QString temp_query;
+    temp_query = SelectStat(Table_name, selFields);
+    temp_query.chop(1);
+    temp_query.append(" ");
+
+    temp_query.append(WhereStat(where_rec,comparison));
+    //temp_query.append(";");
+    qDebug()<<"Select Where Stat: "<<temp_query;
     return(temp_query);
 }
 
@@ -123,15 +167,15 @@ QString QueryGenerator::SelectWhereStat(QString Table_name, QSqlRecord where_rec
 /// \param rec_Insert
 /// \return
 ///
-QString QueryGenerator::InsertStat(QString Table_name, QSqlRecord rec_Insert){
+QString QueryGenerator::InsertStat(const QString Table_name,const QSqlRecord *rec_Insert){
     QString temp_query;
     QString values;
     QString fields;
     temp_query=QString("INSERT INTO \"%1\" (").arg(Table_name);
     qDebug()<<rec_Insert;
-    for (int i=0;i<rec_Insert.count();i++){
-        fields.append(QString("\"%1\",").arg(rec_Insert.fieldName(i)));
-        values.append(QString("\'%1\',").arg(rec_Insert.value(i).toString()));
+    for (int i=0;i<rec_Insert->count();i++){
+        fields.append(QString("\"%1\",").arg(rec_Insert->fieldName(i)));
+        values.append(QString("\'%1\',").arg(rec_Insert->value(i).toString()));
     }
 
     values.chop(1);
@@ -150,7 +194,7 @@ QString QueryGenerator::InsertStat(QString Table_name, QSqlRecord rec_Insert){
 /// \param comparison
 /// \return
 ///
-QString QueryGenerator::UpdateWhereStat(QString Table_name, QSqlRecord rec_Update, QSqlRecord rec_Where, QString comparison){
+QString QueryGenerator::UpdateWhereStat(const QString Table_name, const QSqlRecord *rec_Update, const QSqlRecord *rec_Where, const QString comparison) {
     QString temp_query = UpdateStat(Table_name,rec_Update);
     temp_query.chop(1);
     temp_query.append(" ");
@@ -158,7 +202,7 @@ QString QueryGenerator::UpdateWhereStat(QString Table_name, QSqlRecord rec_Updat
     return temp_query;
 }
 
-QString QueryGenerator::UpdateFromTable(QString origTable, QString destTable,QVector<MyField> copyRec,QVector<MyField> refRec){
+QString QueryGenerator::UpdateFromTable(const QString origTable, const QString destTable, const QVector<MyField> copyRec, const QVector<MyField> refRec){
     QString returnStat = QString("UPDATE \"%1\" SET ").arg(destTable);
     QString colStat;
     foreach(MyField rec, copyRec){
@@ -180,7 +224,7 @@ QString QueryGenerator::UpdateFromTable(QString origTable, QString destTable,QVe
 /// \param Unique
 /// \return
 ///
-QString QueryGenerator::createTable(QString Table_name,QVector<QVector<QString> > Fields_values, QVector<QString> Primary, QVector<QString> Unique){
+QString QueryGenerator::createTable(const QString Table_name,const QVector<QVector<QString> > Fields_values,const QVector<QString> Primary,const QVector<QString> Unique){
     QString temp_query;
     temp_query=QString("CREATE TABLE \"%1\" (").arg(Table_name);
     for(int n=0;n<Fields_values.size();n++){
@@ -212,7 +256,7 @@ QString QueryGenerator::createTable(QString Table_name,QVector<QVector<QString> 
 /// \param fields
 /// \return
 ///
-QString QueryGenerator::createTable(QString Table_name, QVector<MyField> fields){
+QString QueryGenerator::createTable(const QString Table_name,const QVector<MyField> fields){
     QString temp_query;
     temp_query=QString("CREATE TABLE \"%1\" (").arg(Table_name);
     //QStringList primaryFields;
@@ -267,6 +311,7 @@ QString QueryGenerator::createTable(QString Table_name, QVector<MyField> fields)
     return(temp_query);
 }
 
+
 /////////////////////////////////////////////////////////////////////
 /// \brief QueryGenerator::createExtTable
 /// Generates a create table statement for an external table, createTable should suffice
@@ -274,7 +319,7 @@ QString QueryGenerator::createTable(QString Table_name, QVector<MyField> fields)
 /// \param fields
 /// \return
 ///
-QString QueryGenerator::createExtTable(QString Table_name, QVector<MyField> fields){
+QString QueryGenerator::createExtTable(const QString Table_name,const QVector<MyField> fields){
     QString temp_query;
     temp_query=QString("CREATE TABLE \'%1\' (").arg(Table_name);
 
@@ -302,7 +347,7 @@ QString QueryGenerator::createExtTable(QString Table_name, QVector<MyField> fiel
 /// \param destFields
 /// \return
 ///
-QString QueryGenerator::copyTable(QString origTableName, QString destTableName, QVector<MyField> origFields, QVector<MyField> destFields){
+QString QueryGenerator::copyTable(const QString origTableName, const QString destTableName, const QVector<MyField> origFields, const QVector<MyField> destFields){
     QString copyTable = QString("INSERT INTO \"%1\" SELECT").arg(destTableName);
     for (int i = 0; i<destFields.count(); i++){
         copyTable.append(QString(" \"%1\",").arg(destFields[i].getName()));
@@ -317,7 +362,7 @@ QString QueryGenerator::copyTable(QString origTableName, QString destTableName, 
     return copyTable;
 }
 
-QString QueryGenerator::copyExtTable(QString origTableName, QString destTableName, QVector<MyField> origFields, QVector<MyField> destFields){
+QString QueryGenerator::copyExtTable(const QString origTableName, const QString destTableName, const QVector<MyField> origFields, const QVector<MyField> destFields){
 
 }
 
@@ -341,7 +386,7 @@ QStringList QueryGenerator::insertField(QString tableName,QVector<MyField> field
     commands.append("DROP TABLE temp_table;");
     commands.append("PRAGMA foreign_keys = 1;");
 
-    QSqlRecord rec_field = newField.toSqlRecord();
+    QSqlRecord rec_field = newField;//.toSqlRecord();
     //QSqlField tempField("Name",QVariant::String);
     /*rec_field.append(QSqlField("Name",QVariant::String));
     rec_field.setValue("Name",newField.getName());
@@ -357,7 +402,7 @@ QStringList QueryGenerator::insertField(QString tableName,QVector<MyField> field
     rec_field.setValue("Primary",newField.getPrimary());
     rec_field.append(QSqlField("Comments",QVariant::String));
     rec_field.setValue("Comments",newField.getComments());*/
-    commands.append(InsertStat("Fields_table", rec_field));
+    commands.append(InsertStat("Fields_table", &rec_field));
     /*QString fieldInsert;
     fieldInsert=QString("INSERT INTO \'Fields_table\' (\'Name\', \'Type\', \'Vis_Preview\', \'Vis_Table\', \'Position\', \'Primary\', \'Comments\') VALUES (");
     fieldInsert.append(QString("\'%1\',").arg(newField.getName()));
@@ -376,7 +421,7 @@ QStringList QueryGenerator::insertField(QString tableName,QVector<MyField> field
 
 }
 
-QString QueryGenerator::insertField(MyField newField){
+QString QueryGenerator::insertField(const MyField newField){
     QString fieldInsert;
     QString tableName = "Main_table";
     if (newField.getType()==DataType::Images){
@@ -392,17 +437,18 @@ QString QueryGenerator::insertField(MyField newField){
     fieldInsert.append(QString(" \'%1\',").arg(newField.getPrimary()?"True":"False"));
     fieldInsert.append(QString(" \'%1\'").arg(newField.getComments()));
     fieldInsert.append(");");*/
-    fieldInsert = InsertStat(tableName, newField.toSqlRecord());
+    fieldInsert = InsertStat(tableName, &newField);//.toSqlRecord());
     //fieldInsert.append(QString("\'%1\',\'%2\',\'%3\',\'%4\',\'%5\',\'%6\',\'%7\')").arg(newField.getName(),int(newField.getType()),newField.getVisPreview(),newField.getVisTable(),
                                                                                        // newField.getPos(), newField.getPrimary(), newField.getComments()));
     return fieldInsert;
 
 }
 
-QString QueryGenerator::editField(FieldEdit fieldChanges){
-
-    QString command = UpdateWhereStat("Fields_table", fieldChanges.getField().toSqlRecord(),
-                                      fieldChanges.getOldField().primaryRecord());
+QString QueryGenerator::editField(const FieldEdit fieldChanges){
+    MyField oldField = fieldChanges.getOldField();
+    MyField field = fieldChanges.getField();
+    QString command = UpdateWhereStat("Fields_table", &field,
+                                      &oldField);//.toSqlRecord()
 
     /*command=QString("UPDATE \'Fields_table\' SET Name=\'%1\', ").arg(fieldChanges.getField().getName());
     command.append(QString("Type=\'%1\', ").arg((int)(fieldChanges.getField().getType())));
@@ -418,16 +464,17 @@ QString QueryGenerator::editField(FieldEdit fieldChanges){
     return command;
 }
 
-QStringList QueryGenerator::removeField(QString tableName, QVector<MyField> fields, MyField field){
+QStringList QueryGenerator::removeField(const QString tableName, const QVector<MyField> fields, const MyField field){
+    QVector<MyField> oFields;
     QStringList commands;
     commands.append("PRAGMA foreign_keys = 0;");
     commands.append(QString("CREATE TABLE \"%1_temp_table\" AS SELECT * FROM \"%1\";").arg(tableName));
     commands.append(QString("DROP TABLE \"%1\";").arg(tableName));
     //QVector newFields = fields;
     //newFields.replace(newFields.lastIndexOf(oldField),newField);
-    fields.remove(fields.lastIndexOf(field));
-    commands.append(createTable(tableName, fields));
-    commands.append(copyTable(QString("%1_temp_table").arg(tableName),tableName,fields,fields));
+    oFields.remove(fields.lastIndexOf(field));
+    commands.append(createTable(tableName, oFields));
+    commands.append(copyTable(QString("%1_temp_table").arg(tableName),tableName,oFields,oFields));
     commands.append(QString("DROP TABLE \"%1_temp_table\";").arg(tableName));
     commands.append("PRAGMA foreign_keys = 1;");
 
@@ -437,7 +484,7 @@ QStringList QueryGenerator::removeField(QString tableName, QVector<MyField> fiel
     return commands;
 }
 
-QStringList QueryGenerator::multipleChanges(QString tableName, QList<FieldEdit*> changes){
+QStringList QueryGenerator::multipleChanges(const QString tableName, const QList<FieldEdit *> changes){
     QStringList commands;
 
     //Create two vectors to have both the new and old fields
@@ -519,6 +566,8 @@ QStringList QueryGenerator::multipleChanges(QString tableName, QList<FieldEdit*>
     QStringList editCommands;
 
     foreach (FieldEdit *change, changes){
+        MyField oldField = change->getOldField();
+        MyField field = change->getField();
         qDebug()<<"QueryGenerator::multipleChanges is studying change to: "<<change->getOldField().getName();
         qDebug()<<"The action is: "<<change->getAction();
         if (change->getAction()!= "Remove"){
@@ -535,14 +584,14 @@ QStringList QueryGenerator::multipleChanges(QString tableName, QList<FieldEdit*>
         ////OPERATIONS TO DO IS REMOVING A FIELD
         if(change->getAction()=="Remove"){
             //Delete any field from the field's statement which was removed
-            deleteCommands.append(DeleteWhereStat("Fields_table",change->getOldField().primaryRecord(),"="));
+            deleteCommands.append(DeleteWhereStat("Fields_table",&oldField,"="));
             //If the old field was an external table, the table is dropped
             if (change->getOldField().extTable())
                 deleteCommands.append(QString("DROP TABLE \"%1\";").arg(change->getOldField().getTable()));
         ////OPERATIONS TO DO FOR A NEW FIELD
         }else if (change->getAction()=="New"){
             //Fields are inserted in the the field table
-            insertCommands.append(InsertStat("Fields_table", change->getField().toSqlRecord()));
+            insertCommands.append(InsertStat("Fields_table", &field));//.toSqlRecord()));
                         //insertField(change->getField()));
         ////OPERATIONS TO DO FOR EDITING A FIELD
         }else{
@@ -612,5 +661,38 @@ QStringList QueryGenerator::multipleChanges(QString tableName, QList<FieldEdit*>
 
 }
 
+QStringList QueryGenerator::editTable(const QString tableName, const QList<FieldEdit *> changes){
+    QStringList commands;
+    QString origField = "";
+    QString destField = "";
+    QVector<MyField> newFields;
+    //QVector<MyField>;
 
+    QString copyTable = QString("INSERT INTO \"%1\" (").arg(tableName);
+
+    foreach(FieldEdit *change,changes){
+        if (change->getAction()!= "Remove"){
+            newFields.append(change->getField());
+        //if (change->getAction() == "New"){
+            //newFields.append(change->getField());
+        }
+        if (change->getAction() == "Edit" || change->getAction() == ""){
+            origField.append(QString(" \"%1\",").arg(change->getOldField().getName()));
+            destField.append(QString(" \"%1\",").arg(change->getField().getName()));
+        }
+    }
+
+    origField.chop(1);
+    destField.chop(1);
+    copyTable.append(QString(" %1) SELECT %2 FROM \"temp_table\";").arg(destField,origField));
+
+    commands.append("PRAGMA foreign_keys = 0;");
+    commands.append(QString("CREATE TABLE \"temp_table\" AS SELECT * FROM \"%1\";").arg(tableName));
+    commands.append(QString("DROP TABLE \"%1\";").arg(tableName));
+    commands.append(createTable(tableName, newFields));
+    commands.append(copyTable);
+    commands.append("DROP TABLE \"temp_table\";");
+    commands.append("PRAGMA foreign_keys = 1;");
+    return commands;
+}
 

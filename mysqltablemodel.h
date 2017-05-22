@@ -34,7 +34,7 @@ public:
     // Loads the necessary data in the model, such as the fields and their table
     bool select();
     //int rowCount (const QModelIndex &parent) const;
-    //int columnCount(const QModelIndex &parent) const;
+    //inline int columnCount(const QModelIndex &parent) const;
     QVariant data(const QModelIndex &index, int role) const;
     QVariant headerData(int section, Qt::Orientation orientation, int role= Qt::DisplayRole) const;
     //void revertRow(int row);
@@ -80,11 +80,15 @@ private:
     //have a default structure, which can be used to create new records
     QSqlRecord baseRecord;
     QSqlIndex primaryRecord;
+    QSqlIndex uniqueRecord;
+    QVector<MyField> extRecord;
+
 
     //QVector of MyFields which is created each time the columns have to be re-read
     QVector<MyField> Fields;
     //QVector of My fields which contains just the Primary Fields
-    QVector<MyField>  Primary_keys;
+    QVector<MyField> Primary_keys;
+    QVector<MyField> Unique_keys;
 
     //This variable is created as a "Driver" to create the sqlqueries
     //QueryGenerator QueryGen=QueryGenerator();
@@ -104,13 +108,16 @@ private:
 
 
     bool canUpdate(QSqlRecord *avlbRecord);
-    QSqlRecord getPrimary(QSqlRecord* curr_Record) const;
-    QSqlRecord getPrimary(const QModelIndex &index) const;
-    QSqlRecord getPrimary(int row) const;
+    QSqlRecord getUnique(QSqlRecord curr_Record) const;
+    QSqlRecord getUnique(const QModelIndex &index) const;
+    QSqlRecord primaryValues(int row) const;
+    QSqlRecord primaryValues(QSqlRecord currRec) const;
+    QSqlRecord getUnique(int row) const;
     bool createDirectory(QSqlRecord newRec);
     bool createFieldDirectory(MyField newField);
     bool deleteFieldDirectory(MyField oldField);
     bool renameFieldDirectory(MyField oldField, MyField newField);
+    bool renamePrimaryDirectories();
     QString GetDirectory(QSqlRecord newRec, bool relative = true) const;
     QString GetDirectory(QSqlRecord newRec, MyField field, bool relative = true) const;
     bool removeFile(QSqlRecord record, QSqlField field);

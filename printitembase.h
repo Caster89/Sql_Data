@@ -114,7 +114,7 @@ protected:
 
     //The layout for the open widget is created, a vertical
     //box layout
-    QVBoxLayout *editLayout = new QVBoxLayout(this);
+    //QVBoxLayout *editLayout = new QVBoxLayout(this);
     QVBoxLayout *titleLayout = new QVBoxLayout(titleBox);
     QVBoxLayout *valueLayout = new QVBoxLayout(valueBox);
     QVBoxLayout *boxLayout = new QVBoxLayout();

@@ -48,7 +48,8 @@ SOURCES += main.cpp\
     draggablewidget.cpp \
     displaywidgetmultiplechoice.cpp \
     editdatabasedialog.cpp \
-    fielditem.cpp
+    fielditem.cpp \
+    displaywidgetid.cpp
 
 HEADERS  += mainwindow.h \
     modifydialog.h \
@@ -84,7 +85,8 @@ HEADERS  += mainwindow.h \
     draggablewidget.h \
     displaywidgetmultiplechoice.h \
     editdatabasedialog.h \
-    fielditem.h
+    fielditem.h \
+    displaywidgetid.h
 
 FORMS    += mainwindow.ui
 

@@ -7,8 +7,9 @@
 #include <QVariant>
 #include <QDebug>
 #include <QSqlRecord>
+#include <QSqlField>
 
-class MyField
+class MyField  : public QSqlRecord
 {
 
 public:
@@ -16,6 +17,8 @@ public:
     MyField();
 
     MyField(QString Name, QString Table="Main_table", DataType::dataType Field_Type = DataType::Text, bool Vis_Preview = false, bool Vis_Table = false, int Position = 0, bool Primary = false, bool Unique = false,  QString Comments = "");
+    MyField(QSqlRecord newField);
+    QSqlField toSqlField();
     /*
     MyField(const MyField &origField);
 
@@ -25,8 +28,8 @@ public:
     */
     //MyField &operator=(const MyField &orgField);
 
-    bool operator==(const MyField& other);
-    bool operator!=(const MyField& other);
+    //bool operator==(const MyField& other);
+    //bool operator!=(const MyField& other);
     /*
     friend inline void swap(MyField& first,MyField& second){
         using std::swap;
@@ -41,91 +44,93 @@ public:
     }
     */
 
-
-
-
     QSqlRecord primaryRecord();
 
     inline QString getName() const{
-        return Field_Name;
+        return value("Name").toString();
     }
     inline void setName(QString newName) {
-        Field_Name = newName;
+        setValue("Name", newName);
     }
 
     inline QString getTable() const{
-        return Field_Table;
+        return value("Table").toString();
     }
     inline void setTable(QString newTable) {
-        Field_Table=newTable;
+        setValue("Table", newTable);
     }
 
     inline DataType::dataType getType() const{
-        return Field_Type;
+        return DataType::dataType(value("Type").toInt());
     }
     inline void setType(DataType::dataType newType) {
-        Field_Type = newType;
+        setValue("Type", newType);
     }
 
     inline bool getVisPreview() const{
-        return Field_Vis_Preview;
+        return value("Vis_Preview").toBool();
     }
     inline void setVisPreview(bool newPreview) {
-        Field_Vis_Preview = newPreview;
+        setValue("Vis_Preview", newPreview);
     }
 
     inline bool getVisTable() const{
-        return Field_Vis_Table;
+        return value("Vis_Table").toBool();
     }
     inline void setVisTable(bool newTable) {
-        Field_Vis_Table = newTable;
+        setValue("Table", newTable);
     }
 
     inline int getPos() const{
-        return Field_Pos;
+        return value("Position").toInt();
     }
     inline void setPos(int newPos) {
-        Field_Pos = newPos;
+        setValue("Position", newPos);
     }
 
     inline bool getPrimary() const{
-        return Field_Primary;
+        return value("Primary").toBool();
     }
     inline void setPrimary(bool newPrimary) {
-        Field_Primary = newPrimary;
+        setValue("Primary", newPrimary);
     }
 
     inline QString getComments() const{
-        return Field_Comments;
+        return value("Comments").toString();
     }
     inline void setComments(QString newComments) {
-        Field_Comments = newComments;
+        setValue("Comments", newComments);
     }
 
     inline bool getUnique() const{
-        return Field_Unique;
+        return value("Unique").toBool();
     }
     inline void setUnique(bool newUnique) {
-        Field_Unique = newUnique;
+        setValue("Unique", newUnique);
     }
 
     inline bool extTable() const{
-        if (Field_Type == DataType::Images)
+        if (getType() == DataType::Images)
             return true;
         return false;
     }
 
     inline bool extDir() const{
-        if (Field_Type == DataType::Image ||Field_Type == DataType::Images)
+        if (getType() == DataType::Image || getType() == DataType::Images)
             return true;
         return false;
     }
 
-    QSqlRecord toSqlRecord() const;
+    friend bool operator< (const MyField &field1, const MyField &field2);
+    friend bool operator<= (const MyField &field1, const MyField &field2);
+    friend bool operator> (const MyField &field1, const MyField &field2);
+    friend bool operator>= (const MyField &field1, const MyField &field2);
+    //QSqlRecord toSqlRecord() const;
 
 
 
 private:
+    /*
     QString Field_Name = "";
     QString Field_Table = "";
     QString Field_Comments = "";
@@ -134,7 +139,7 @@ private:
     bool Field_Vis_Table = false;
     int Field_Pos = false;
     bool Field_Primary = false;
-    bool Field_Unique = false;
+    bool Field_Unique = false;*/
 
 
 
@@ -167,7 +172,7 @@ public:
         action = newAction;
     }
 
-    inline QString getAction(){
+    inline QString getAction() const{
         return action;
     }
 
@@ -175,14 +180,14 @@ public:
         field = newField;
     }
 
-    inline MyField getField(){
+    inline MyField getField() const{
         return field;
     }
 
     inline void setOldField(MyField newField){
         oldField = newField;
     }
-    inline MyField getOldField(){
+    inline MyField getOldField() const{
         return oldField;
     }
 

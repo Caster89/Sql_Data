@@ -43,9 +43,7 @@ private slots:
     bool newDB();
     bool openDB();
     bool editDB();
-    inline void modelHasReset(){
-        qDebug()<<"ModelHasReset";
-    }
+    void reloadModel();
 
     inline void dataChangeEmitted(){
         qDebug()<<"Model emitted data change";

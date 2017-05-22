@@ -5,6 +5,7 @@
 
 DraggableWidget::DraggableWidget(QWidget *parent) : QFrame(parent)
 {
+    qDebug()<<"DraggableWidget::DraggableWidget()";
     buildWidget();
 
 }

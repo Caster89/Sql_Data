@@ -460,23 +460,23 @@ bool MainWindow::editDB(){
 
 
     qDebug()<<"Got to here with "<<changes.count()<<" changes";
-    dbmodel->disconnect();
+    //dbmodel->disconnect();
 
-    qDebug()<<"Copy database: ";
-    qDebug()<<QFile::copy(dbName,"db_bckup.sqlite");
-    CreateConnection(dbName);
+    //qDebug()<<"Copy database: ";
+    //qDebug()<<QFile::copy(dbName,"db_bckup.sqlite");
+    //CreateConnection(dbName);
     bool success = dbmodel->editTableStructure(changes);
     if(!success){
         qDebug()<<"The edit was not successfull:\n "<<dbmodel->lastError();
         dbmodel->disconnect();
 
-        qDebug()<<"Delete damaged database:"<<QFile::remove(dbName);
-        qDebug()<<"Rename backup"<<QFile::rename("db_bckup.sqlite",dbName);
+        //qDebug()<<"Delete damaged database:"<<QFile::remove(dbName);
+        //qDebug()<<"Rename backup"<<QFile::rename("db_bckup.sqlite",dbName);
         CreateConnection(dbName);
         return false;
     }
     //editDBDiag->show();
-    bool rewrite = false;
+    //bool rewrite = false;
     /*foreach(FieldEdit *change, changes){
         qDebug()<<change->getField().getName()<<" majorChange: "<<change->mainEdit();
         if (change->mainEdit()){
@@ -487,10 +487,52 @@ bool MainWindow::editDB(){
     if (rewrite){
         QStringList changeCommands = QueryGenerator::multipleChanges("Main_table",changes);
     }*/
-    QFile::remove("db_bckup.sqlite");
+
+    //QFile::remove("db_bckup.sqlite");
     dbmodel->disconnect();
-    CreateConnection(dbName);
+    reloadModel();
+    //CreateConnection(dbName);
     return true;
+}
+
+void MainWindow::reloadModel(){
+    //QString fileName = fileDiag.selectedFiles().first();
+    foreach(QWidget* currItem, prwItems){
+        prwLayout->removeWidget(currItem);
+        currItem->setParent(NULL);
+        delete currItem;
+    }
+    //delete dbmodel;
+    //dbTableView->setModel();
+    prwItems.clear();
+    //dbName=fileName;
+    qDebug()<<"Reloding with filename "<<dbName;
+    CreateConnection(dbName); //Go to method, return bool
+    //for (int i=0;i<prwItems.size();i++){
+    foreach(QWidget* currItem, prwItems){
+        //If the field has to be previewed in the preview frame then the field name label is added
+        //prwLayout->addWidget(prwItems[i]);
+        //prwItems[i]->show();
+        prwLayout->addWidget(currItem);
+        currItem->show();
+    }
+    prwLayout->update();
+    frmPreview->update();
+    frmPreview->adjustSize();
+    scrPreview->setFixedWidth(frmPreview->width()+20);
+    btnAddRecord->setEnabled(true);
+    btnRemoveRecord->setEnabled(true);
+    btnModifyRecord->setEnabled(true);
+    btnPrint->setEnabled(true);
+    editDBAct->setEnabled(true);
+    exportAct->setEnabled(true);
+    addRowAct->setEnabled(true);
+    removeRowAct->setEnabled(true);
+    //previewsAct->setEnabled(true);
+    nextAct->setEnabled(true);
+    dbTableView->selectRow(0);
+    qDebug()<<"The layout has: "<<prwLayout->count()<<" Widgets";
+
 }
 
 #ifndef QT_NO_CONTEXTMENU

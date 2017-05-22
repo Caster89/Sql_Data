@@ -12,7 +12,7 @@ FieldItem::FieldItem(QWidget *parent):DraggableWidget(parent)
 
     ckbFieldVisTable->setChecked(fieldEdit.getOldField().getVisTable());
 
-    ckbFieldPrimary->setChecked(fieldEdit.getOldField().getPrimary());
+    //ckbFieldPrimary->setChecked(fieldEdit.getOldField().getPrimary());
 
     ckbFieldUnique->setChecked(fieldEdit.getOldField().getUnique());
     buildWidget();
@@ -33,7 +33,7 @@ FieldItem::FieldItem(MyField field, QWidget *parent):DraggableWidget(parent)
 
     ckbFieldVisTable->setChecked(fieldEdit.getOldField().getVisTable());
 
-    ckbFieldPrimary->setChecked(fieldEdit.getOldField().getPrimary());
+    //ckbFieldPrimary->setChecked(fieldEdit.getOldField().getPrimary());
 
     ckbFieldUnique->setChecked(fieldEdit.getOldField().getUnique());
     buildWidget();
@@ -58,7 +58,7 @@ void FieldItem::buildWidget(){
     fieldLayout->addWidget(lblFieldType,0,2,1,1,Qt::AlignRight);
     fieldLayout->addWidget(cmbFieldType,0,3,1,1,Qt::AlignRight);
 
-    fieldLayout->addWidget(ckbFieldPrimary,0,4,1,1, Qt::AlignLeft);
+    //fieldLayout->addWidget(ckbFieldPrimary,0,4,1,1, Qt::AlignLeft);
 
     fieldLayout->addWidget(ckbFieldVisTable,1,0,1,1);
     fieldLayout->addWidget(ckbFieldVisPreview,1,1,1,1);
@@ -69,7 +69,7 @@ void FieldItem::buildWidget(){
     //setLayout(mainLayout);
     connect(ledtFieldName, SIGNAL(textChanged(QString)), this, SLOT(nameChanged()));
     connect(cmbFieldType, SIGNAL(currentIndexChanged(int)), this, SLOT(typeChanged()));
-    connect(ckbFieldPrimary, SIGNAL(stateChanged(int)), this, SLOT(principalChanged()));
+    //connect(ckbFieldPrimary, SIGNAL(stateChanged(int)), this, SLOT(principalChanged()));
     connect(ckbFieldVisTable, SIGNAL(stateChanged(int)), this, SLOT(visTableChanged()));
     connect(ckbFieldVisPreview, SIGNAL(stateChanged(int)), this, SLOT(visPreviewChanged()));
     connect(ckbFieldUnique, SIGNAL(stateChanged(int)), this, SLOT(uniqueChanged()));
@@ -138,7 +138,7 @@ void FieldItem::typeChanged(){
     }
 }
 
-void FieldItem::principalChanged(){
+/*void FieldItem::principalChanged(){
     fieldEdit.setPrimary(ckbFieldPrimary->isChecked());
     editedField.setPrimary(ckbFieldPrimary->isChecked());
     if (getAction()=="Remove" || getAction()=="New"){
@@ -149,7 +149,7 @@ void FieldItem::principalChanged(){
     } else {
         action = "";
     }
-}
+}*/
 
 void FieldItem::visTableChanged(){
     fieldEdit.setVisTable(ckbFieldVisTable->isChecked());
